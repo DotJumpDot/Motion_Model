@@ -43,13 +43,18 @@ Scream (wire the clips from that FBX).
 3. Press Play: ghost idles/wanders, chases inside 10 m, attacks
    inside 1.6 m with cooldown.
 
-## Known-good numbers (Blender round-trip, 2026-10-27, v0.2)
+## Known-good numbers (v0.4 AI ghost, 2026-10-28)
 
-- Ghost_Woman.fbx: 2572 tris, 9 bones, 6 materials (3 texture
-  atlases, embedded in the FBX — no external files to copy), bbox
-  0.48 × 0.50 × 1.70 m.
+- Ghost_Woman.fbx: **7999 tris, 15 bones** (with legs — Generic rig
+  required, do NOT use Humanoid: bone names are custom), 1 material
+  with a 1024 texture **embedded in the FBX**, bbox ~0.64 × 0.42 ×
+  1.96 m, character faces **-Y in Blender = +Z in Unity** with
+  default export settings. Clips: Idle(96f)/Walk(48f)/Attack(36f);
+  tick Loop Time on Idle+Walk.
 - Krasue.fbx: 4028 tris, 6 bones, 6 materials (3 atlases, embedded),
-  bbox 0.35 × 0.36 × 0.94 m (head occupies z 0.9–1.85).
-- Both well under the ≤5k tri budget in Docs/ARCHITECTURE.md.
-- Materials arrive textured; if Unity shows any material pink, set
-  its shader to Standard/URP Lit and reassign the embedded texture.
+  bbox 0.35 × 0.36 × 0.94 m (head occupies z 0.9–1.85). Clips:
+  Float(96f)/Lunge(30f)/Scream(36f); Loop on Float.
+- Ghost walk has real leg motion now (thigh/shin/foot bones); the
+  AI mesh's dress hem is soft-skinned so it sways with the stride.
+- If any material shows pink: Standard/URP Lit + reassign the
+  embedded texture.

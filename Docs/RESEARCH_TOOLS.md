@@ -18,12 +18,32 @@ accelerators, not requirements. No free ready-made Thai ghost model
 (Krasue / Nang Nak) was found on Sketchfab or itch.io as of the survey
 date, so building (or remixing a CC0 base) is the way.
 
-## AI 3D generation — the quality-upgrade path (added 2026-10-27)
+## AI 3D generation — implemented (v0.4, 2026-10-28)
 
-After v0.2 feedback ("model quality not good, parts look
-disconnected"), the script-built meshes hit their ceiling: lathe +
-sphere assembly reads as primitives, however tuned. Three real
-options, best-first for this machine:
+Option A went in. What actually worked, for future reference:
+
+- **Shape**: Hunyuan3D-2mini-turbo, headless `hy3dgen` — works on the
+  RTX 5060 (8 GB), 24 s per mesh. Pin **transformers 4.48.x /
+  diffusers 0.32 / huggingface_hub 0.28** (the current 5.x renames
+  DINOv2 internals and breaks the conditioner checkpoint).
+- **Texture**: Hunyuan's multiview paint pipeline needs its custom
+  CUDA rasterizer compiled — blocked here (torch is CUDA 12.8, the
+  installed toolkit is 13.4, and installing 12.8 side-by-side needs
+  admin rights; the pip nvcc wheel ships no nvcc.exe on Windows).
+  **Fallback used instead**: front-projection bake of the reference
+  image onto the mesh in Blender (the mesh was generated from that
+  image, so alignment is near-perfect) with a procedural fabric blend
+  for the back. Upgrade path: run the CUDA 12.8 installer once as
+  admin → compile the two extensions → real multiview texturing.
+- **Rig/animation**: the AI mesh (has real legs) is decimated to 8k
+  tris and auto-skinned in Blender to a 15-bone rig with smooth
+  2-bone weights; hand-keyed clips unchanged in principle.
+- **License flag**: Hunyuan3D weights ship under the Tencent Hunyuan
+  Community License (the repo header also mentions a non-commercial
+  variant) — the friend must check the terms before any commercial
+  release.
+
+Original research (2026-10-27) below for reference.
 
 ### Option A — Hunyuan3D-2mini locally (recommended; hardware fits)
 

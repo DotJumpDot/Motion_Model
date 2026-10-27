@@ -1,10 +1,20 @@
 # Architecture
 
-This repo is an **asset pipeline** driven by scripts. It produces
-low-poly rigged+animated Thai ghost characters (FBX) for Unity using
-one tool: Blender, run headless. The scripts are the source of truth;
-the FBX files are build output (committed for the friend's
-convenience).
+This repo is an **asset pipeline** driven by scripts. As of v0.4 it
+has two stages:
+
+1. **AI generation** (`src/hunyuan3d/`, runs once per revision): the
+   Ghost Woman's shape comes from Hunyuan3D-2mini (local, RTX 5060)
+   given the friend's reference image; texture is a Blender
+   projection bake of that image onto the mesh.
+2. **Rig/animation/export** (`src/blender/` + `tools/hunyuan3d/
+   rig_ghost.py`): decimate to 8k tris, 15-bone rig, smooth 2-bone
+   auto-skinning, hand-keyed clips, FBX with embedded texture.
+
+Krasue remains fully script-built (v0.2 pipeline: lathe/sphere
+primitives + procedural atlases). The heavy ML toolchain (venv,
+Hunyuan3D repo, model weights, CUDA 12.8) lives in `tools/` and is
+gitignored — the versioned scripts document and reproduce it.
 
 ## Pipeline (data flow)
 
@@ -50,10 +60,10 @@ hand-keyed in the scripts — stiffness/twitch reads as horror.
 
 ## Performance budgets (the contract with the game)
 
-- Ghost Woman ≤ 5,000 tris (built v0.2: 2572), 9 bones. Krasue ≤
-  5,000 tris (built v0.2: 4028), 6 bones.
-- ≤ 6 materials per character, each a small procedural atlas PNG
-  (512–1024) **embedded in the FBX** — nothing to wire up in Unity.
+- Ghost Woman ≤ 8,000 tris (built v0.4: 7999), 15 bones (with real
+  legs). Krasue ≤ 5,000 tris (built v0.2: 4028), 6 bones.
+- Ghost: 1 material, 1024 projection-baked texture, embedded in FBX.
+  Krasue: 6 materials, 3 atlases, embedded.
 - Clips sampled at 30 fps; loopable: Idle/Walk (Ghost), Float (Krasue).
 
 ## Repo layout
