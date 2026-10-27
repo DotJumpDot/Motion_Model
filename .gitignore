@@ -29,3 +29,6 @@ tmp/
 Thumbs.db
 .DS_Store
 .idea/
+
+# ML toolchain (not part of the repo)
+tools/
