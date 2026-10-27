@@ -17,6 +17,9 @@ out/
 lib/
 *.tgz
 
+# Blender
+*.blend1
+
 # Logs & temp
 *.log
 tmp/

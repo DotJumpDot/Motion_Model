@@ -6,9 +6,17 @@ assets is the expensive path we're avoiding.
 
 ## Status
 
-Planning — research and the 7-phase plan are done (`Docs/`). No assets
-built yet, no tools installed yet. Next: Phase 1 (pick the ghost +
-reference board), then Phase 2 (toolchain install).
+**v0.1 asset package built (2026-10-27).** Both ghosts are generated
+by headless-Blender scripts and committed as FBX with rigs and
+hand-keyed clips. Remaining gate: the friend's Unity import
+(`Docs/IMPORT_CHECKLIST.md`), then tag `v0.1`.
+
+| Asset | Tris | Bones | Clips |
+|---|---|---|---|
+| Ghost_Woman.fbx | 1312 | 9 | Idle, Walk, Attack |
+| Krasue.fbx | 2828 | 6 | Float, Lunge, Scream |
+
+Previews: `assets/preview/*.png`.
 
 ## The pipeline in one line
 

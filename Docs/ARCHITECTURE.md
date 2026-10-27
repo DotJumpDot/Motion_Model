@@ -16,7 +16,7 @@ src/blender/build_ghost.py    src/blender/build_krasue.py
         |                              |
         v                              v
   assets/fbx/Ghost_Woman.fbx     assets/fbx/Krasue.fbx
-  (mesh + 11-bone rig + Idle/Walk/Attack)  (mesh + 7-bone rig + Float/Lunge/Scream)
+  (mesh + 9-bone rig + Idle/Walk/Attack)  (mesh + 6-bone rig + Float/Lunge/Scream)
         |                              |
         v                              v
        src/blender/verify_fbx.py  (re-imports both FBX,
@@ -50,7 +50,8 @@ hand-keyed in the scripts — stiffness/twitch reads as horror.
 
 ## Performance budgets (the contract with the game)
 
-- Ghost Woman ≤ 5,000 tris, 11 bones. Krasue ≤ 5,000 tris, 7 bones.
+- Ghost Woman ≤ 5,000 tris (built: 1312), 9 bones. Krasue ≤ 5,000
+  tris (built: 2828), 6 bones.
 - ≤ 5 materials per character. No textures.
 - Clips sampled at 30 fps; loopable: Idle/Walk (Ghost), Float (Krasue).
 

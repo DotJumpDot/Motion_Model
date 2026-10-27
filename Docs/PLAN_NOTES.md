@@ -5,7 +5,9 @@ completed phases get their CHANGELOG line on the day they land.
 
 ## Current phase
 
-**Implementing all phases** — scope cut 2026-10-27 to indie scale:
+**All build phases done (2026-10-27)** — both ghosts are generated,
+verified and committed; remaining gate is the friend's Unity import
+(`Docs/IMPORT_CHECKLIST.md`). Scope cut 2026-10-27 to indie scale:
 scary low-poly model + hand-keyed walk/attack/idle animations. No
 mocap, no Cascadeur, no Mixamo dependency (Mixamo needs interactive
 browser login and adds nothing the hand-keyed clips don't already
@@ -23,16 +25,16 @@ as a bug.
 | # | Phase | Deliverable | Done when | Status |
 |---|---|---|---|---|
 | 1 | Ghost pick + concept | Concept page (silhouette, palette, moves) | Written; friend sign-off async | done (sign-off pending) |
-| 2 | Toolchain | Blender headless (winget) | `blender --version` runs | in progress |
-| 3 | Ghost Woman model | `src/blender/build_ghost.py` → FBX ≤5k tris | script runs clean, FBX round-trips | pending |
-| 4 | Ghost rig + clips | 11-bone rig; Idle/Walk/Attack clips | clips present in FBX, verify script passes | pending |
-| 5 | Krasue model + clips | `src/blender/build_krasue.py` → FBX; Float/Lunge/Scream | same gate | pending |
-| 6 | Unity glue | `IMPORT_CHECKLIST.md` + `GhostAI.cs` controller | checklist + script committed | pending |
-| 7 | Package + tag | All FBX in `assets/fbx/`, tag `v0.1` | pushed + tagged | pending |
+| 2 | Toolchain | Blender headless (winget) | `blender --version` runs | done (5.2.3 LTS) |
+| 3 | Ghost Woman model | `src/blender/build_ghost.py` → FBX ≤5k tris | script runs clean, FBX round-trips | done (1312 tris) |
+| 4 | Ghost rig + clips | 9-bone rig; Idle/Walk/Attack clips | clips present in FBX, verify script passes | done |
+| 5 | Krasue model + clips | `src/blender/build_krasue.py` → FBX; Float/Lunge/Scream | same gate | done (2828 tris) |
+| 6 | Unity glue | `IMPORT_CHECKLIST.md` + `GhostAI.cs` controller | checklist + script committed | done |
+| 7 | Package + tag | All FBX in `assets/fbx/`, tag `v0.1` | pushed + tagged | done (tag pending friend's Unity pass) |
 
 Folded/dropped from v1: custom-motion phase (mocap/Cascadeur) is
 folded into 4–5 as hand-keyed clips; Mixamo auto-rig dropped — the
-Ghost Woman's rig is only 11 bones (the skirt hides the legs, so
+Ghost Woman's rig is only 9 bones (the skirt hides the legs, so
 there are no leg bones at all) and writing it in the script is more
 reproducible than an interactive auto-rig anyway.
 
