@@ -5,6 +5,11 @@ One line per meaningful change, newest first. Format:
 list under its date line. Entries mirror the commit log; commits
 themselves follow the style in `AGENTS.md`.
 
+- 2026-10-27 — Generated assets: `assets/fbx/Ghost_Woman.fbx` (1312
+  tris, 9 bones, 3 clips, ~424 KB) + `assets/fbx/Krasue.fbx` (2828
+  tris, 6 bones, 3 clips, ~352 KB) via headless Blender 5.2.3 LTS;
+  Workbench previews in `assets/preview/`; verified by FBX re-import
+  (`verify_fbx.py`) — tris/bones/clips/bbox within budget.
 - 2026-10-27 — Build system: `src/blender/blender_lib.py` (lathe/
   sphere/tube mesh builders, armature + nearest-rule skinning,
   keyframe clip engine with Blender 5.2 slotted-action compat, FBX
