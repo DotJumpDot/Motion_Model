@@ -6,10 +6,16 @@ a new project and the style carries over unchanged.
 
 ## What this repo is
 
-> **Replace this block on day one of the real project.** Two to five
-> sentences: what the project does, the launch/run command if any, and
-> the primary platform (for us: Windows, Git Bash + PowerShell, Windows
-> Terminal first).
+Motion_Model builds low-poly, animated Thai ghost 3D characters (Mae
+Nak style, Krasue) for a Unity horror game. The whole point is to avoid
+buying expensive animated horror assets, so the pipeline is free
+tooling only: Blender (model/UV/texture) → Mixamo (auto-rig + stock
+animations) → Cascadeur / FreeMoCap (custom motion) → FBX → Unity
+(Humanoid / Mecanim). Deliverables are FBX + texture atlas + a Unity
+import checklist. Tooling runs Windows-first (Git Bash + PowerShell);
+the game target is the Unity editor on Windows. No runnable app — see
+`Docs/PLAN_NOTES.md` for the phase plan and `Docs/ARCHITECTURE.md` for
+the pipeline.
 
 ## Repo layout
 

@@ -1,37 +1,39 @@
-# Project Base
+# Motion_Model — low-poly Thai ghost assets for Unity
 
-Template repo in the DotJumpDot house style. Copy this folder to start
-any new project so every repo keeps the same shape, docs and commit
-style. Maintained by [DotJumpDot](https://github.com/DotJumpDot).
+Animated, low-poly Thai ghost 3D characters for a horror game in
+Unity, built entirely on free tooling because buying animated horror
+assets is the expensive path we're avoiding.
 
 ## Status
 
-Scaffold — no code yet. Replace this section with the project status
-(what works, what's next) as soon as real work starts.
+Planning — research and the 7-phase plan are done (`Docs/`). No assets
+built yet, no tools installed yet. Next: Phase 1 (pick the ghost +
+reference board), then Phase 2 (toolchain install).
 
-## What's inside
+## The pipeline in one line
+
+Reference → Blender (model, ≤15k tris, 512px atlas) → Mixamo (free
+auto-rig + stock horror animations) → Cascadeur / FreeMoCap (custom
+motion) → FBX → Unity (Humanoid / Mecanim) → packaged release.
+
+## Repo layout
 
 | Path | Purpose |
 |---|---|
 | `AGENTS.md` | Working rules + the commit & push style contract (read first) |
 | `CHANGELOG.md` | Newest-first `YYYY-MM-DD — what` log of the work |
 | `Docs/` | Long-form docs; `Docs/README.md` is the index |
-| `.gitignore` | Generic ignores (secrets, deps, build output) |
-
-## Start a new project from this base
-
-1. Copy this folder, rename it to the new project.
-2. `git init -b main` (or copy the `.git` history away and re-init).
-3. Fill `AGENTS.md` → "What this repo is".
-4. Fill this README's title + Status; trim what doesn't apply.
-5. Skim `Docs/` skeletons, keep the ones the project needs.
-6. First commit follows `AGENTS.md` — `Type: summary` + `- [x]` body +
-   `Verified:` closer. Every commit after that too.
+| `assets/` | Source `.blend`, textures, FBX exports (arrives Phase 3, Git LFS) |
 
 ## Docs index
 
 - [`Docs/README.md`](Docs/README.md) — documentation index
-- [`Docs/ARCHITECTURE.md`](Docs/ARCHITECTURE.md) — how it's built
-- [`Docs/HOW_TO_RUN.md`](Docs/HOW_TO_RUN.md) — setup and run
-- [`Docs/PLAN_NOTES.md`](Docs/PLAN_NOTES.md) — phase plan + version pins
+- [`Docs/RESEARCH_TOOLS.md`](Docs/RESEARCH_TOOLS.md) — free toolchain
+  survey: roles, costs, links, licensing notes
+- [`Docs/PLAN_NOTES.md`](Docs/PLAN_NOTES.md) — 7-phase plan, ghost
+  shortlist, budget, risks, deferred ideas
+- [`Docs/ARCHITECTURE.md`](Docs/ARCHITECTURE.md) — the asset pipeline,
+  performance budgets, repo layout, decisions
+- [`Docs/HOW_TO_RUN.md`](Docs/HOW_TO_RUN.md) — toolchain install
+  (lands at Phase 2)
 - [`Docs/HANDOFF.md`](Docs/HANDOFF.md) — pick-up-where-we-left-off notes
