@@ -5,6 +5,13 @@ One line per meaningful change, newest first. Format:
 list under its date line. Entries mirror the commit log; commits
 themselves follow the style in `AGENTS.md`.
 
+- 2026-10-27 — Plan v2 (indie scope): mocap/Cascadeur/Mixamo dropped
+  from core pipeline; everything rebuilt as headless Blender scripts
+  (`Docs/PLAN_NOTES.md` phases table + status, `Docs/ARCHITECTURE.md`
+  rewritten script-driven incl. Generic-rig decision, `Docs/
+  RESEARCH_TOOLS.md` marked used vs optional, `Docs/HOW_TO_RUN.md`
+  now real build commands, new `Docs/CONCEPT.md` for both ghosts,
+  docs index updated); Blender 5.2.3 LTS installed via winget.
 - 2026-10-27 — Kickoff research + plan: `Docs/RESEARCH_TOOLS.md`
   (free toolchain survey — Blender, Mixamo, Cascadeur, FreeMoCap,
   Tripo/Meshy, licensing), `Docs/PLAN_NOTES.md` (7-phase plan, ghost
