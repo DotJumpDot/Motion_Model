@@ -5,10 +5,11 @@ lies is worse than no doc. Add new pages here when created.
 
 | Doc | What it holds |
 |---|---|
-| [ARCHITECTURE.md](ARCHITECTURE.md) | How the project is built: modules, data flow, decisions |
-| [HOW_TO_RUN.md](HOW_TO_RUN.md) | Prereqs, setup, run, verify |
-| [PLAN_NOTES.md](PLAN_NOTES.md) | Phase plan, version pins, deferred ideas |
-| [HANDOFF.md](HANDOFF.md) | Where we left off, gotchas, next steps |
+| [RESEARCH_TOOLS.md](RESEARCH_TOOLS.md) | Free toolchain survey: roles, costs, links, licensing notes |
+| [PLAN_NOTES.md](PLAN_NOTES.md) | 7-phase plan, ghost shortlist, budget, risks, deferred ideas |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | The asset pipeline, performance budgets, repo layout, decisions |
+| [HOW_TO_RUN.md](HOW_TO_RUN.md) | Toolchain install — becomes real at Phase 2 |
+| [HANDOFF.md](HANDOFF.md) | Where we left off, next step, gotchas |
 
 House patterns used across our repos (add the ones this project needs):
 
