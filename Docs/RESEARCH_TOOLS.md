@@ -18,6 +18,44 @@ accelerators, not requirements. No free ready-made Thai ghost model
 (Krasue / Nang Nak) was found on Sketchfab or itch.io as of the survey
 date, so building (or remixing a CC0 base) is the way.
 
+## AI 3D generation — the quality-upgrade path (added 2026-10-27)
+
+After v0.2 feedback ("model quality not good, parts look
+disconnected"), the script-built meshes hit their ceiling: lathe +
+sphere assembly reads as primitives, however tuned. Three real
+options, best-first for this machine:
+
+### Option A — Hunyuan3D-2mini locally (recommended; hardware fits)
+
+- [Tencent-Hunyuan/Hunyuan3D-2](https://github.com/Tencent-Hunyuan/Hunyuan3D-2)
+  (open source) generates a **realistic textured mesh from one
+  image** — e.g. the friend's reference photo itself.
+- **mini variant needs ~5 GB VRAM** (via
+  [ComfyUI](https://docs.comfy.org/tutorials/3d/hunyuan3D-2)); this
+  machine has an RTX 5060 8 GB → fits. Standard variant wants 12 GB.
+- Windows caveat: the repo's custom rasterizer extension can be
+  painful to build on Windows; the ComfyUI route or the
+  [Hugging Face demo/space](https://huggingface.co/tencent/Hunyuan3D-2)
+  are the smoother paths. Weights download is multi-GB; first setup
+  ~30–90 min.
+- Pipeline fit: AI mesh → Blender (decimate ≤5k tris) → **auto-skin
+  to the existing 9-bone rig** (our proximity skinning works on any
+  mesh) → existing hand-keyed clips → FBX. The build scripts become
+  the rigging/animation stage instead of the modeling stage.
+
+### Option B — Tripo / Meshy API with a free key
+
+- [Tripo](https://studio.tripo3d.ai/workspace/generate) and
+  [Meshy](https://www.meshy.ai) both do image→3D on free tiers and
+  have REST APIs; Tripo additionally offers humanoid auto-rigging.
+- Needs the user to create an account and hand over an API key
+  (free credits/month). Scriptable headlessly after that.
+
+### Option C — keep the procedural models
+
+- Zero new dependencies, fully reproducible, already rigged and
+  animated. Quality ceiling as seen in v0.3.
+
 ## Core stack — all free
 
 | Tool | Role | Cost | Links | Notes |
