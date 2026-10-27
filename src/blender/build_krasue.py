@@ -4,7 +4,9 @@ Headless run:
     blender --background --python src/blender/build_krasue.py
 
 Output: assets/fbx/Krasue.fbx — floating head + trailing organs,
-7-bone rig, clips Float/Lunge/Scream. See Docs/CONCEPT.md.
+7-bone rig... 6 bones (Root non-deform + Head/Jaw/Organ1-3), clips
+Float/Lunge/Scream. v0.2: teeth, dark staring eyes with pale irises,
+procedural mottled/blood textures. Design spec: Docs/CONCEPT.md.
 """
 
 import math
@@ -18,16 +20,33 @@ import blender_lib as bl  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__))))
+TEXDIR = os.path.join(REPO, "assets", "textures")
 OUT = os.path.join(REPO, "assets", "fbx", "Krasue.fbx")
 
-# Palette from Docs/CONCEPT.md
-SKIN = (0.851, 0.788, 0.722, 1.0)   # wan pallor   #D9C9B8
-HAIR = (0.090, 0.075, 0.063, 1.0)   # near black   #171310
-DARKRED = (0.361, 0.051, 0.063, 1.0)  # eyes/mouth #5C0D10
-ORGAN = (0.557, 0.184, 0.165, 1.0)  # organs       #8E2F2A
-HEART = (0.431, 0.122, 0.110, 1.0)  # heart        #6E1F1C
+# Hair is a CAP on top/back — the face stays fully exposed (severed
+# head look), opening of 150 degrees centred at +Y
+OPEN = {"start_angle": (90 + 75) * bl.DEG, "sweep": (360 - 150) * bl.DEG}
 
-OPEN = {"start_angle": 135 * bl.DEG, "sweep": 270 * bl.DEG}  # face at +Y
+
+def build_textures():
+    os.makedirs(TEXDIR, exist_ok=True)
+    tex = {}
+    # pallid warm skin with heavy bruise mottling
+    tex["kr_skin"] = bl.make_texture(
+        "kr_skin", 1024, base=(0.72, 0.65, 0.57),
+        blotch=(0.34, 0.20, 0.19), blotch_amount=0.8, blotch_seed=13,
+        dirt_bottom=0.35, seed=12, out_dir=TEXDIR)
+    # hanging strands
+    tex["kr_hair"] = bl.make_texture(
+        "kr_hair", 512, base=(0.065, 0.055, 0.050),
+        blotch=(0.13, 0.11, 0.10), blotch_amount=0.55, blotch_seed=15,
+        streak=((0.22, 0.20, 0.185), 42, 1.1), seed=14, out_dir=TEXDIR)
+    # wet organs: dark red with blackish veins
+    tex["kr_organ"] = bl.make_texture(
+        "kr_organ", 512, base=(0.40, 0.10, 0.09),
+        blotch=(0.12, 0.025, 0.025), blotch_amount=0.85, blotch_seed=17,
+        streak=((0.06, 0.012, 0.012), 40, 0.9), seed=16, out_dir=TEXDIR)
+    return tex
 
 
 def organ_tube(name, mat, pts, bevel=0.026):
@@ -53,33 +72,86 @@ def organ_tube(name, mat, pts, bevel=0.026):
     return obj
 
 
-def build_meshes():
+def build_meshes(tex):
     mats = {
-        "kr_skin": bl.flat_material("kr_skin", SKIN),
-        "kr_hair": bl.flat_material("kr_hair", HAIR),
-        "kr_dark": bl.flat_material("kr_dark", DARKRED, rough=0.4),
-        "kr_organ": bl.flat_material("kr_organ", ORGAN),
-        "kr_heart": bl.flat_material("kr_heart", HEART),
+        "kr_skin": bl.textured_material("kr_skin", tex["kr_skin"],
+                                         rough=0.6),
+        "kr_hair": bl.textured_material("kr_hair", tex["kr_hair"],
+                                        rough=0.55),
+        "kr_organ": bl.textured_material("kr_organ", tex["kr_organ"],
+                                         rough=0.35),
+        "kr_dark": bl.flat_material("kr_dark",
+                                    (0.02, 0.012, 0.012, 1.0), rough=0.4),
+        "kr_iris": bl.flat_material("kr_iris",
+                                    (0.68, 0.66, 0.60, 1.0), rough=0.15),
+        "kr_tooth": bl.flat_material("kr_tooth",
+                                     (0.72, 0.69, 0.58, 1.0), rough=0.35),
     }
     objs = {}
-    objs["kr_head"] = bl.sphere(
+    objs["kr_head"] = h = bl.sphere(
         "kr_head", mats["kr_skin"], (0, 0.02, 1.66), 0.14,
-        scale=(1.0, 1.05, 1.08))
-    objs["kr_hair"] = bl.lathe(
+        scale=(1.0, 1.05, 1.08), u=24, v=16)
+    bl.shade_smooth(h)
+    objs["kr_hair"] = hair = bl.lathe(
         "kr_hair", mats["kr_hair"],
-        [(0.02, 1.84), (0.17, 1.79), (0.195, 1.66), (0.175, 1.55),
-         (0.14, 1.50), (0.10, 1.47)],
+        [(0.02, 1.83), (0.155, 1.80), (0.175, 1.70), (0.155, 1.60),
+         (0.105, 1.545), (0.05, 1.525)],
         segments=24, force_outward=True, **OPEN)
+    bl.shade_smooth(hair)
+
+    # staring eyes on the exposed face: dark sockets, pale irises
     for side, x in (("L", 1), ("R", -1)):
-        objs[f"kr_eye_{side}"] = bl.sphere(
+        objs[f"kr_eye_{side}"] = e = bl.sphere(
             f"kr_eye_{side}", mats["kr_dark"],
-            (0.055 * x, 0.145, 1.675), 0.024, u=8, v=6)
-    objs["kr_mouth"] = bl.sphere(
-        "kr_mouth", mats["kr_dark"], (0, 0.135, 1.585), 0.055,
-        scale=(1.0, 0.5, 0.9), u=10, v=8)
-    objs["kr_jaw"] = bl.sphere(
-        "kr_jaw", mats["kr_skin"], (0, 0.115, 1.505), 0.085,
-        scale=(1.0, 1.1, 0.55), u=12, v=8)
+            (0.055 * x, 0.145, 1.675), 0.032, u=10, v=8)
+        bl.shade_smooth(e)
+        objs[f"kr_iris_{side}"] = ir = bl.sphere(
+            f"kr_iris_{side}", mats["kr_iris"],
+            (0.047 * x, 0.170, 1.668), 0.013, u=8, v=6)
+        bl.shade_smooth(ir)
+
+    # gaping unhinged mouth (dark hollow) + jaw
+    objs["kr_mouth"] = m = bl.sphere(
+        "kr_mouth", mats["kr_dark"], (0, 0.140, 1.585), 0.060,
+        scale=(1.0, 0.45, 1.0), u=12, v=10)
+    bl.shade_smooth(m)
+    objs["kr_jaw"] = j = bl.sphere(
+        "kr_jaw", mats["kr_skin"], (0, 0.10, 1.502), 0.080,
+        scale=(1.15, 1.05, 0.5), u=14, v=10)
+    bl.shade_smooth(j)
+
+    # teeth: two rows of small cones framing the mouth
+    up, lo = [], []
+    for ti in range(5):
+        x = -0.044 + 0.022 * ti
+        up.append(((x, 0.163, 1.618), (x, 0.160, 1.600)))
+        lo.append(((x, 0.152, 1.546), (x, 0.154, 1.564)))
+
+    def teeth_mesh(name, pairs, mat):
+        import bmesh
+        from mathutils import Matrix, Vector
+        bm = bmesh.new()
+        for start, end in pairs:
+            d = Vector(end) - Vector(start)
+            mid = (Vector(start) + Vector(end)) / 2
+            mtx = Matrix.Translation(mid) @ \
+                d.normalized().to_track_quat("Z", "Y").to_matrix().to_4x4()
+            bmesh.ops.create_cone(bm, cap_ends=True, cap_tris=True,
+                                  segments=6, radius1=0.009, radius2=0.001,
+                                  depth=d.length, matrix=mtx)
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+        mesh = bpy.data.meshes.new(name)
+        bm.to_mesh(mesh)
+        bm.free()
+        obj = bpy.data.objects.new(name, mesh)
+        bl.link(obj)
+        obj.data.materials.append(mat)
+        return obj
+
+    objs["kr_teeth_up"] = teeth_mesh("kr_teeth_up", up, mats["kr_tooth"])
+    objs["kr_teeth_lo"] = teeth_mesh("kr_teeth_lo", lo, mats["kr_tooth"])
+
+    # organ trail
     objs["kr_gut1"] = organ_tube(
         "kr_gut1", mats["kr_organ"],
         [(0.02, 0.01, 1.50), (0.10, -0.02, 1.35), (0.02, 0.05, 1.18),
@@ -92,12 +164,14 @@ def build_meshes():
         "kr_gut3", mats["kr_organ"],
         [(0.00, 0.02, 1.47), (0.05, 0.10, 1.25), (-0.06, 0.05, 1.05),
          (0.03, 0.10, 0.88)])
-    objs["kr_heart"] = bl.sphere(
-        "kr_heart", mats["kr_heart"], (0.09, 0.02, 1.28), 0.07,
-        scale=(0.85, 1.0, 1.15), u=10, v=8)
-    objs["kr_stomach"] = bl.sphere(
+    objs["kr_heart"] = hrt = bl.sphere(
+        "kr_heart", mats["kr_organ"], (0.09, 0.02, 1.28), 0.07,
+        scale=(0.85, 1.0, 1.15), u=12, v=10)
+    bl.shade_smooth(hrt)
+    objs["kr_stomach"] = st = bl.sphere(
         "kr_stomach", mats["kr_organ"], (-0.05, 0.00, 1.12), 0.06,
-        scale=(1.1, 0.9, 0.8), u=10, v=8)
+        scale=(1.1, 0.9, 0.8), u=12, v=10)
+    bl.shade_smooth(st)
     return objs
 
 
@@ -114,11 +188,13 @@ def build_rig(objs):
     arm = bl.build_armature("Krasue_Armature", bones)
 
     head_rule = [("Head", lambda c: True)]
-    for name in ("kr_head", "kr_hair", "kr_eye_L", "kr_eye_R", "kr_mouth"):
+    for name in ("kr_head", "kr_hair", "kr_eye_L", "kr_eye_R",
+                 "kr_iris_L", "kr_iris_R", "kr_mouth", "kr_teeth_up"):
         bl.parent_and_skin(objs[name], arm, head_rule)
     bl.parent_and_skin(objs["kr_jaw"], arm, [("Jaw", lambda c: True)])
+    bl.parent_and_skin(objs["kr_teeth_lo"], arm,
+                       [("Jaw", lambda c: True)])
 
-    # organs: parent each mesh once, then z-band the verts to 3 bones
     organ_meshes = ("kr_gut1", "kr_gut2", "kr_gut3", "kr_heart",
                     "kr_stomach")
     for name in organ_meshes:
@@ -161,11 +237,11 @@ def add_clips(arm):
                  "Organ1": S((-8, 0, 0)), "Organ2": S((-8, 0, 0)),
                  "Organ3": S((-8, 0, 0))}),
             (9, {"Root": H((0, 0.42, -0.02), (0, 0, 0)),
-                 "Head": S((18, 0, 0)), "Jaw": S((55, 0, 0)),
+                 "Head": S((18, 0, 0)), "Jaw": S((60, 0, 0)),
                  "Organ1": S((-28, 0, 0)), "Organ2": S((-28, 0, 0)),
                  "Organ3": S((-28, 0, 0))}),
             (15, {"Root": H((0, 0.40, 0.0), (0, 0, 0)),
-                  "Head": S((16, 0, 0)), "Jaw": S((50, 0, 0)),
+                  "Head": S((16, 0, 0)), "Jaw": S((55, 0, 0)),
                   "Organ1": S((-22, 0, 0)), "Organ2": S((-22, 0, 0)),
                   "Organ3": S((-22, 0, 0))}),
             (30, rest()),
@@ -181,7 +257,7 @@ def add_clips(arm):
             keys.append((f, {
                 "Root": {"loc": (0, 0, 0.008 * math.sin(7 * f))},
                 "Head": {"rot": (-9, 2 * math.sin(f), side)},
-                "Jaw": {"rot": (60 + 4 * math.sin(5 * f), 0, 0)}}))
+                "Jaw": {"rot": (62 + 4 * math.sin(5 * f), 0, 0)}}))
         keys.append((36, {"Root": {"loc": (0, 0, 0), "rot": (0, 0, 0)},
                           "Head": {"rot": (0, 0, 0)},
                           "Jaw": {"rot": (0, 0, 0)}}))
@@ -194,7 +270,8 @@ def add_clips(arm):
 
 def main():
     bl.clear_scene()
-    objs = build_meshes()
+    tex = build_textures()
+    objs = build_meshes(tex)
     arm = build_rig(objs)
     add_clips(arm)
     os.makedirs(os.path.dirname(OUT), exist_ok=True)

@@ -5,6 +5,16 @@ One line per meaningful change, newest first. Format:
 list under its date line. Entries mirror the commit log; commits
 themselves follow the style in `AGENTS.md`.
 
+- 2026-10-27 — v0.2 scary pass: `blender_lib` gained procedural
+  texture atlas generation (numpy fBm + anisotropic strand noise,
+  packed+saved PNGs), textured materials, positional cylindrical UVs
+  (`_cyl_uv`; `calc_uvs` unreliable in 5.2), `displace_verts`,
+  smooth shading, FBX `embed_textures`. Ghost Woman redesigned per
+  friend reference: hair slit + ONE pale eye, torn hem, bare
+  ankles/feet, drooping fingers, sleeves, darker grubbier palette,
+  head-twitch in Idle. Krasue rebuilt as exposed severed head:
+  staring sockets with off-center pale irises, two teeth rows,
+  wider mouth, bruise-mottled skin, veined wet organs.
 - 2026-10-27 — Packaging docs: new `Docs/IMPORT_CHECKLIST.md` (Unity
   import steps, Generic-rig note, animator wiring, GhostAI setup,
   known-good round-trip numbers); HANDOFF rewritten to built state,
