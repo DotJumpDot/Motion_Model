@@ -43,17 +43,18 @@ Scream (wire the clips from that FBX).
 3. Press Play: ghost idles/wanders, chases inside 10 m, attacks
    inside 1.6 m with cooldown.
 
-## Known-good numbers (v0.5 AI ghost, 2026-10-28)
+## Known-good numbers (v0.6 AI ghost, 2026-10-28)
 
-- Ghost_Woman.fbx: **7999 tris, 26 bones** (with legs — Generic rig
-  required, do NOT use Humanoid: bone names are custom), 1 material
-  with a 1024 texture **embedded in the FBX**, bbox ~0.64 × 0.42 ×
-  1.96 m, character faces **-Y in Blender = +Z in Unity** with
-  default export settings. Clips: Idle(96f)/Walk(48f)/Attack(36f);
-  tick Loop Time on Idle+Walk.
-- v0.5 texture: black hair drape with strand streaks over head/chest,
-  pale corpse face between the curtains, pale bare hands + feet,
-  grubby gray robe (photo-projected front, procedural fabric back).
+- Ghost_Woman.fbx: **7998 tris (~24k verts — UV atlas splits), 26
+  bones** (with legs — Generic rig required, do NOT use Humanoid:
+  bone names are custom), 1 material with a 1024 texture **embedded
+  in the FBX** (3.5 MB file), bbox ~0.64 × 0.42 × 1.96 m, character
+  faces **-Y in Blender = +Z in Unity** with default export settings.
+  Clips: Idle(96f)/Walk(48f)/Attack(36f); tick Loop Time on Idle+Walk.
+- v0.6 texture: Hunyuan multiview AI paint — painted face (dark
+  sunken eyes, mouth), pale corpse skin on arms/hands/feet, grubby
+  dress folds, black hair with strand flow (replaces the v0.5
+  projection bake; that path is still the script's fallback).
 - v0.5 secondary-motion bones (all sway is already baked into the
   clips): `HairB_1..3` (back drape), `HairL_1..2` / `HairR_1..2`
   (front curtains), `Robe_F/B/L/R` (hem flutter).

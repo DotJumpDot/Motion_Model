@@ -2,14 +2,14 @@
 
     blender --background --python tools/hunyuan3d/rig_ghost.py
 
-Pipeline: import ghost_ai.glb (Hunyuan3D output) -> decimate to the
+Pipeline: import ghost_ai_tex.glb (Hunyuan multiview paint output;
+falls back to ghost_ai.glb + projection bake) -> decimate to the
 tri budget -> normalize to origin-at-feet -> classify every vertex as
 hair / skin / robe (depth vs the reference photo) -> build a 26-bone
 rig (hips/spine/head + 2x3 arm + 2x3 leg + 7 hair-whip chain bones +
 4 robe-hem bones) -> auto-skin by nearest bone segment with class
 gates -> hand-key Idle/Walk/Attack incl. hair/hem secondary sway ->
-bake the texture (photo projection + vertex-mask hair/skin/robe mix)
--> export FBX (embedded texture).
+export FBX (embedded texture).
 
 Render checks: rest, mid-walk and mid-attack poses, textured,
 front + close + back.
@@ -28,15 +28,23 @@ sys.path.insert(0, os.path.join(REPO, "src", "blender"))
 import blender_lib as bl  # noqa: E402
 
 GLB = os.path.join(REPO, "tools", "hunyuan3d", "out", "ghost_ai.glb")
+TEX_GLB = os.path.join(REPO, "tools", "hunyuan3d", "out",
+                       "ghost_ai_tex_8k.glb")  # paint on the 8k mesh
 OUT_DIR = os.path.join(REPO, "tools", "hunyuan3d", "out")
 REF_IMG = os.path.join(OUT_DIR, "input_clean.png")
 BAKE_PNG = os.path.join(REPO, "assets", "textures", "gw_ai_bake.png")
+PAINT_PNG = os.path.join(REPO, "assets", "textures", "gw_ai_paint.png")
 OUT_FBX = os.path.join(REPO, "assets", "fbx", "Ghost_Woman.fbx")
 TRI_BUDGET = 8000
 
 # ---- 1. import + decimate + normalize ---------------------------------
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
+# prefer the Hunyuan-paint textured mesh (same geometry, xatlas UVs
+# and a 1024 albedo baked by the multiview diffusion); the projection
+# bake path below stays as fallback when the texgen output is absent
+if os.path.exists(TEX_GLB):
+    GLB = TEX_GLB
 bpy.ops.import_scene.gltf(filepath=GLB)
 src = [o for o in bpy.data.objects if o.type == "MESH"][0]
 
@@ -415,15 +423,24 @@ bl.add_clip(arm, "Idle", 96, idle)
 bl.add_clip(arm, "Walk", 48, walk)
 bl.add_clip(arm, "Attack", 36, bl.pose_from_keys(attack_keys()))
 
-# ---- 5. texture bake: photo projection + vertex-mask regions -----------
-# The mesh was GENERATED from the reference image, so a front-view
-# projection aligns almost perfectly. Vertex classes from 1b drive the
-# final mix: hair = black streak atlas sampled with the projection UV
-# (v = world z, so streaks hang vertically), skin = pale corpse base
-# lightly tinted by the photo, robe = photo on the front / procedural
-# fabric on the back. One EMIT bake in Cycles onto a smart-UV atlas.
+# ---- 5. texture --------------------------------------------------------
+# Two sources: (a) the Hunyuan multiview-paint atlas shipped inside the
+# tex GLB (v0.6 default — painted face, skin and hair), (b) the photo
+# projection bake (v0.5 fallback when the texgen output is absent).
 
-if os.path.exists(REF_IMG):
+if GLB == TEX_GLB:
+    os.makedirs(os.path.dirname(PAINT_PNG), exist_ok=True)
+    src_img = next(n.image for m in src.data.materials if m
+                   for n in m.node_tree.nodes
+                   if n.type == "TEX_IMAGE" and n.image)
+    src_img.filepath_raw = PAINT_PNG
+    src_img.file_format = "PNG"
+    src_img.save()
+    mat2 = bl.textured_material("gw_ai_tex", src_img, rough=0.85)
+    src.data.materials.clear()
+    src.data.materials.append(mat2)
+    print("TEXTURE: using Hunyuan paint atlas ->", PAINT_PNG)
+elif os.path.exists(REF_IMG):
     os.makedirs(os.path.dirname(BAKE_PNG), exist_ok=True)
 
     bpy.context.view_layer.objects.active = src

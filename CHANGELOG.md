@@ -5,6 +5,20 @@ One line per meaningful change, newest first. Format:
 list under its date line. Entries mirror the commit log; commits
 themselves follow the style in `AGENTS.md`.
 
+- 2026-10-28 — **v0.6: real Hunyuan AI texturing unlocked** (user ran
+  the CUDA 12.8.1 + VS Build Tools installers as admin): compiled
+  custom_rasterizer + mesh_processor with nvcc 12.8 + MSVC 14.44
+  (patched rasterizer.h — torch 2.11's compiled_autograd.h is not
+  nvcc-clean; HF-cache symlinks need Developer Mode → predownload
+  paint weights as real files, HY3DGEN_MODELS override). Pipeline
+  order fixed: decimate first (export_8k.py), paint second
+  (gen_texture.py) — painting then decimating scrambles the xatlas
+  UVs. rig_ghost.py now prefers ghost_ai_tex_8k.glb (painted face,
+  corpse skin on arms/feet, grubby dress, black hair flow; ~24k verts
+  from UV splits, 7998 tris) with the v0.5 projection bake kept as
+  fallback; gw_ai_paint.png saved to assets/textures. FBX 3.5 MB
+  embedded. RESEARCH_TOOLS unblocked note + IMPORT_CHECKLIST v0.6
+  numbers.
 - 2026-10-28 — **v0.5: Ghost Woman secondary motion + real texture**
   (user: "look cool, add hair/cloth sway + texture"): 11 new bones
   (HairB_1..3 back-drape whip, HairL/R_1..2 front curtains, Robe_F/B/L/R

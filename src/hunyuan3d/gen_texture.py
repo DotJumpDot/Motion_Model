@@ -11,18 +11,21 @@ import os
 import sys
 import time
 
-ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
-    os.path.abspath(__file__)))), "tools", "hunyuan3d")
+ROOT = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.join(ROOT, "Hunyuan3D-2")
 sys.path.insert(0, REPO)
 os.environ.setdefault("HF_HOME", os.path.join(ROOT, "hf-cache"))
+# real-file weight copies (predownload_paint.py) — the hub cache
+# symlinks need Windows Developer Mode
+os.environ.setdefault("HY3DGEN_MODELS",
+                      os.path.join(ROOT, "hy3dgen-models"))
 
 import trimesh  # noqa: E402
 from PIL import Image  # noqa: E402
 
 from hy3dgen.texgen import Hunyuan3DPaintPipeline  # noqa: E402
 
-mesh = trimesh.load(os.path.join(ROOT, "out", "ghost_ai.glb"),
+mesh = trimesh.load(os.path.join(ROOT, "out", "ghost_ai_8k.glb"),
                     force="mesh")
 image = Image.open(os.path.join(ROOT, "out", "input_clean.png")
                    ).convert("RGBA")
@@ -43,6 +46,6 @@ t0 = time.time()
 textured = pipeline(mesh, image=image)
 print(f"textured in {time.time() - t0:.0f}s")
 
-OUT = os.path.join(ROOT, "out", "ghost_ai_tex.glb")
+OUT = os.path.join(ROOT, "out", "ghost_ai_tex_8k.glb")
 textured.export(OUT)
 print("SAVED", OUT)

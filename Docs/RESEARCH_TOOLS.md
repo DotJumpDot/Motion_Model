@@ -27,17 +27,25 @@ Option A went in. What actually worked, for future reference:
   diffusers 0.32 / huggingface_hub 0.28** (the current 5.x renames
   DINOv2 internals and breaks the conditioner checkpoint).
 - **Texture**: Hunyuan's multiview paint pipeline needs its custom
-  CUDA rasterizer compiled — blocked here (torch is CUDA 12.8, the
-  installed toolkit is 13.4, and installing 12.8 side-by-side needs
-  admin rights; the pip nvcc wheel ships no nvcc.exe on Windows).
-  **Fallback used instead**: front-projection bake of the reference
-  image onto the mesh in Blender (the mesh was generated from that
-  image, so alignment is near-perfect) with a procedural fabric blend
-  for the back. Upgrade path: run the CUDA 12.8 installer once as
-  admin → compile the two extensions → real multiview texturing.
+  CUDA rasterizer compiled. **UNBLOCKED 2026-10-28 (v0.6)**: the user
+  ran the CUDA 12.8.1 installer (custom install, display driver
+  unchecked, side-by-side with the existing v13.4) and VS 2022 Build
+  Tools; both extensions compile with nvcc 12.8 + MSVC 14.44 (the
+  newer VS18 14.51 is too new for nvcc 12.8). Two Windows gotchas,
+  fixed in the gitignored toolchain: torch 2.11's
+  `compiled_autograd.h` is not nvcc-clean — patch `rasterizer.h` to
+  include `torch/types.h` and keep `torch/extension.h` out of the
+  CUDA TU; and the HF cache symlinks need Developer Mode —
+  pre-download the paint weights as real files (`predownload_paint.py`)
+  and point `HY3DGEN_MODELS` there. Run order matters: **decimate
+  first, paint second** (`export_8k.py` → `gen_texture.py`) —
+  decimating after painting scrambles the xatlas UVs. ~17 min per
+  paint on the 5060. The v0.5 projection bake remains as the
+  fallback path in rig_ghost.py.
 - **Rig/animation**: the AI mesh (has real legs) is decimated to 8k
-  tris and auto-skinned in Blender to a 15-bone rig with smooth
-  2-bone weights; hand-keyed clips unchanged in principle.
+  tris and auto-skinned in Blender to a 26-bone rig (15 body + 7
+  hair-whip + 4 robe-hem) with smooth 2-bone weights and baked
+  secondary-motion sway; optional Unity-side JiggleBone.cs physics.
 - **License flag**: Hunyuan3D weights ship under the Tencent Hunyuan
   Community License (the repo header also mentions a non-commercial
   variant) — the friend must check the terms before any commercial
