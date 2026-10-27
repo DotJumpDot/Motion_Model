@@ -5,6 +5,14 @@ One line per meaningful change, newest first. Format:
 list under its date line. Entries mirror the commit log; commits
 themselves follow the style in `AGENTS.md`.
 
+- 2026-10-27 — v0.3 ghost cohesion pass (friend feedback: parts
+  looked disconnected): hair bob-cut ends at shoulders (no chest
+  slab) + side panels rotated to overlap the slit edges, dress top
+  tapers into a neck ring inside the head sphere (no gap), sleeves
+  overlap the dress shoulder, arm segments extended ~2 cm past each
+  joint to kill elbow gaps. AI 3D-gen research added to
+  RESEARCH_TOOLS (Hunyuan3D-2mini fits this RTX 5060 8GB; Tripo/
+  Meshy API-key option; procedural kept as fallback).
 - 2026-10-27 — v0.2 docs: CONCEPT rewritten to the v0.2 designs
   (slit hair + single eye + torn hem + feet; exposed severed-head
   Krasue), ARCHITECTURE budgets with built numbers + texture-embed

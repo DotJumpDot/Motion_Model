@@ -70,14 +70,15 @@ def build_meshes(tex):
     }
     objs = {}
 
-    # Slim gathered-waist dress, hem torn by seeded jitter
+    # Slim gathered-waist dress; the top tapers into a NECK ring that
+    # pokes up inside the head sphere, so head and body read as one
     hem = 0.27
     objs["gw_dress"] = d = bl.lathe(
         "gw_dress", mats["gw_dress"],
         [(0.03, hem), (0.24, hem + 0.02), (0.235, hem + 0.28),
          (0.215, hem + 0.55), (0.165, hem + 0.90), (0.13, 1.17),
-         (0.15, 1.26), (0.11, 1.34), (0.07, 1.40)],
-        segments=24, caps=("top",))
+         (0.145, 1.27), (0.115, 1.36), (0.065, 1.43), (0.058, 1.465)],
+        segments=24)  # no top cap: the opening hides inside the head
     rng = np.random.default_rng(11)
     jit = rng.uniform(0.88, 1.14, 64)
 
@@ -100,24 +101,23 @@ def build_meshes(tex):
         scale=(0.88, 0.95, 1.10), u=24, v=16)
     bl.shade_smooth(h)
 
-    # Hair: long curtain hugging the head, narrow crevice slit;
-    # hem verts jittered so the strands break the perfect cylinder
+    # Hair: bob-cut curtain hugging the head, ending AT the
+    # shoulders (no slab over the chest), narrow crevice slit; two
+    # side panels fall over the chest edges like the reference
     objs["gw_hair"] = hair = bl.lathe(
         "gw_hair", mats["gw_hair"],
-        [(0.02, 1.72), (0.14, 1.69), (0.165, 1.55), (0.16, 1.32),
-         (0.145, 1.05), (0.135, 0.78), (0.12, 0.58)],
+        [(0.02, 1.72), (0.14, 1.69), (0.165, 1.55), (0.16, 1.38),
+         (0.15, 1.22), (0.145, 1.10)],
         segments=24, force_outward=True, **OPEN)
     bl.shade_smooth(hair)
-    rng_h = np.random.default_rng(23)
-    hj = rng_h.uniform(0.82, 1.22, 48)
-
-    def strand(c):
-        i = int(abs(c.x * 131 + c.y * 89) * 100) % 48
-        r = math.hypot(c.x, c.y) * hj[i]
-        n = max(math.hypot(c.x, c.y), 1e-6)
-        return (c.x * r / n, c.y * r / n, c.z + (hj[(i + 5) % 48] - 1) * 0.06)
-
-    bl.displace_verts(hair, lambda c: c.z < 0.70, strand)
+    for side, ang in (("L", 115), ("R", 65)):
+        objs[f"gw_hairside_{side}"] = hs = bl.lathe(
+            f"gw_hairside_{side}", mats["gw_hair"],
+            [(0.148, 1.32), (0.160, 1.20), (0.170, 1.06),
+             (0.176, 0.94), (0.170, 0.90)],
+            segments=8, start_angle=ang * bl.DEG, sweep=60 * bl.DEG,
+            force_outward=True)
+        bl.shade_smooth(hs)
 
     # Single pale eye peeking through the slit (socket + iris)
     objs["gw_eye"] = e = bl.sphere(
@@ -147,10 +147,18 @@ def build_meshes(tex):
         el = (0.155 * x, 0.06, 1.10)
         wr = (0.150 * x, 0.11, 0.90)
         tip = (0.142 * x, 0.16, 0.80)
+        # extend each segment ~2 cm past the joint so the caps
+        # overlap instead of leaving elbow gaps
+        up_end = tuple(a + (b - a) * 0.12 for a, b in zip(sh, el))
+        fo_end = tuple(a + (b - a) * 0.12 for a, b in zip(el, wr))
+        fo_start = tuple(a + (b - a) * -0.10 for a, b in zip(el, wr))
+        ha_start = tuple(a + (b - a) * -0.12 for a, b in zip(wr, tip))
         objs[f"gw_upperarm_{side}"] = ua = bl.tube(
-            f"gw_upperarm_{side}", mats["gw_skin"], sh, el, 0.046, 0.036)
+            f"gw_upperarm_{side}", mats["gw_skin"], sh, up_end, 0.046,
+            0.036)
         objs[f"gw_forearm_{side}"] = fa = bl.tube(
-            f"gw_forearm_{side}", mats["gw_skin"], el, wr, 0.034, 0.026)
+            f"gw_forearm_{side}", mats["gw_skin"], fo_start, fo_end,
+            0.034, 0.026)
         objs[f"gw_hand_{side}"] = ha = bl.sphere(
             f"gw_hand_{side}", mats["gw_skin"],
             ((wr[0] + tip[0]) / 2, (wr[1] + tip[1]) / 2,
@@ -168,10 +176,10 @@ def build_meshes(tex):
                 0.011, 0.005, segments=6)
             bl.shade_smooth(fg)
 
-        # short sleeve over the shoulder
+        # short sleeve overlapping the dress shoulder
         objs[f"gw_sleeve_{side}"] = sv = bl.tube(
             f"gw_sleeve_{side}", mats["gw_dress"],
-            (0.145 * x, 0.02, 1.345), (0.155 * x, 0.045, 1.21),
+            (0.135 * x, 0.02, 1.35), (0.150 * x, 0.045, 1.21),
             0.072, 0.058, segments=12)
         bl.shade_smooth(sv)
     return objs
@@ -199,7 +207,8 @@ def build_rig(objs):
 
     bl.parent_and_skin(objs["gw_dress"], arm, [("Spine", lambda c: True)])
     head_rule = [("Head", lambda c: True)]
-    for k in ("gw_head", "gw_hair", "gw_eye", "gw_iris"):
+    for k in ("gw_head", "gw_hair", "gw_hairside_L", "gw_hairside_R",
+              "gw_eye", "gw_iris"):
         bl.parent_and_skin(objs[k], arm, head_rule)
     hips_rule = [("Hips", lambda c: True)]
     for side in ("L", "R"):
