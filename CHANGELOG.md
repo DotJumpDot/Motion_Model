@@ -5,6 +5,13 @@ One line per meaningful change, newest first. Format:
 list under its date line. Entries mirror the commit log; commits
 themselves follow the style in `AGENTS.md`.
 
+- 2026-10-27 — v0.2 docs: CONCEPT rewritten to the v0.2 designs
+  (slit hair + single eye + torn hem + feet; exposed severed-head
+  Krasue), ARCHITECTURE budgets with built numbers + texture-embed
+  and LFS-revisit decisions, IMPORT_CHECKLIST known-good numbers +
+  embedded-texture note, HANDOFF updated (new gotchas: calc_uvs,
+  embed_textures; v0.1/v0.2 tag history), README status table,
+  PLAN_NOTES done line.
 - 2026-10-27 — v0.2 assets regenerated: `Ghost_Woman.fbx` (2572
   tris, 9 bones, 6 materials with 3 embedded atlases, bbox
   0.48×0.50×1.70 m) + `Krasue.fbx` (4028 tris, 6 bones, 6 materials

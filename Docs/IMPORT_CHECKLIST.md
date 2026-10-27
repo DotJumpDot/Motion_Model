@@ -43,10 +43,13 @@ Scream (wire the clips from that FBX).
 3. Press Play: ghost idles/wanders, chases inside 10 m, attacks
    inside 1.6 m with cooldown.
 
-## Known-good numbers (Blender round-trip, 2026-10-27)
+## Known-good numbers (Blender round-trip, 2026-10-27, v0.2)
 
-- Ghost_Woman.fbx: 1312 tris, 9 bones, 4 materials, bbox
-  0.92 × 1.11 × 1.80 m.
-- Krasue.fbx: 2828 tris, 6 bones, 5 materials, bbox
-  0.39 × 0.41 × 0.95 m (head occupies z 0.9–1.85).
+- Ghost_Woman.fbx: 2572 tris, 9 bones, 6 materials (3 texture
+  atlases, embedded in the FBX — no external files to copy), bbox
+  0.48 × 0.50 × 1.70 m.
+- Krasue.fbx: 4028 tris, 6 bones, 6 materials (3 atlases, embedded),
+  bbox 0.35 × 0.36 × 0.94 m (head occupies z 0.9–1.85).
 - Both well under the ≤5k tri budget in Docs/ARCHITECTURE.md.
+- Materials arrive textured; if Unity shows any material pink, set
+  its shader to Standard/URP Lit and reassign the embedded texture.

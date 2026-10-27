@@ -1,45 +1,46 @@
 # Concept — the two ghosts
 
-One page per ghost. Phase 1 deliverable; friend sign-off is async —
-builds proceed on these specs.
+One page per ghost. v0.2 revision reflects the friend's reference
+(grubby Sadako-style ghost): textured, grimmer, less "toy". Phase 1
+sign-off is async — builds proceed on these specs.
 
-## Ghost Woman (v0.1) — Mae Nak folklore style
+## Ghost Woman (v0.1 → v0.2) — Mae Nak folklore style
 
-- **Silhouette:** a tall slim figure in a long dark-trimmed dress that
-  flares to the floor; arms hang forward reaching; the head is a
-  smooth curtain of black hair with no visible face.
-- **The horror hook:** no face. Long black hair falls over where the
-  face should be; two dull red eyes glow in the shadow beneath the
-  hair. She shuffles instead of walking, and her attack is a sudden
-  two-armed snatch.
-- **Palette:** corpse skin `#E8E6DF` (pale grey-white), dress faded
-  white `#DAD5C9`, hair near-black `#14100E`, eyes blood red
-  `#7A0E12`.
-- **Signature moves:**
-  - *Idle* — almost-still sway, like she's breathing wrong.
-  - *Walk* — hip-driven shuffle, arms out, no foot movement visible.
-  - *Attack* — arms snap up, then lunge forward with a small body
-    lunge; snaps back too fast.
-- **Build:** lathe dress, sphere head + hair curtain, tube arms,
-  ~11 bones (hips/spine/head + 2×3 arm bones), ≤5k tris.
+- **Silhouette (v0.2):** slim gathered-waist dress with a torn,
+  jittered hem; bare ankles and grubby feet below it; skinny arms
+  hang slightly away from the body with drooped hands and three
+  spindly fingers each; the head is wrapped in long black hair to
+  the waist with a narrow slit showing a pale sliver of face —
+  and ONE grey eye staring through it.
+- **The horror hook:** no face, one eye. She shuffles instead of
+  walking, and her attack snaps both arms overhead before lunging.
+  Idle includes a sudden head-twitch glitch.
+- **Palette/textures (v0.2, procedural atlases):** dirty grey-brown
+  dress fabric (stains, fold streaks, heavy hem grime), corpse skin
+  (grey-blue mottling), near-black hair with hanging strand
+  streaks, black socket + pale iris.
+- **Build:** lathe dress (24 seg, seeded hem jitter), sphere head,
+  slit lathe hair (18° gap, hugging the head), tube arms/fingers,
+  ankle/feet spheres; 9 bones (hips/spine/head + 2×3 arm), 2572
+  tris.
 
 ## Krasue (v0.2)
 
-- **Silhouette:** a woman's severed head floating at eye height,
-  trailing a slick mess of organs below it.
+- **Silhouette (v0.2):** a severed woman's head — face fully
+  exposed with mottled dead skin — hair only as a cap on top/back;
+  black eye sockets with pale, slightly wall-eyed irises; a gaping
+  dark mouth ringed with two rows of small teeth; the organ trail
+  hangs below like wet rope.
 - **The horror hook:** she glides silently, then *darts* at the
-  player with the jaw unhinged. The organs trail and sway with a
-  delay, so she always looks like she just stopped moving.
-- **Palette:** skin `#D9C9B8` (waning warm pallor), hair `#171310`,
-  eyes/mouth dark red `#5C0D10`, organs `#8E2F2A`, heart `#6E1F1C`.
-- **Signature moves:**
-  - *Float* — slow bob, head tilts, organs sway out of phase.
-  - *Lunge (Attack)* — wind back, dart forward ~0.5 m with the jaw
-    wide, organs whip behind, snap back.
-  - *Scream* — jaw hangs open, whole head trembles, quick shake.
-- **Build:** sphere head + jaw piece, hair cap, red eye spheres, dark
-  mouth, organ heart blob + 3 bezier intestine tubes; ~7 bones
-  (root/head/jaw + 3 organ bones), ≤5k tris.
+  player with the jaw unhinged and teeth out. Organs trail out of
+  phase so she always looks like she just stopped moving. The
+  off-center pupils read as "wrong" before you know why.
+- **Palette/textures (v0.2):** bruise-mottled pallid skin, dark
+  veined wet organs, near-black hair cap, black sockets, pale
+  iris, yellowed teeth.
+- **Build:** sphere head + hair cap lathe, socket/iris spheres,
+  mouth + jaw, 12 teeth cones, 3 bezier gut tubes + heart +
+  stomach; 6 bones (Root non-deform/Head/Jaw/Organ1-3), 4028 tris.
 
 ## Folklore licensing
 

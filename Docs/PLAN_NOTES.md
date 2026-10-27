@@ -63,6 +63,8 @@ dropped with the v2 scope.
 
 ## Done
 
+- 2026-10-27 — v0.2 scary pass: textures + redesign per friend's
+  reference (all 7 phases re-verified; tag `v0.2`).
 - 2026-10-27 — Phase 0: repo linked to GitHub, research + plan written.
 - 2026-10-27 — Plan v2: indie scope, script-driven pipeline, mocap and
   Mixamo dropped from core.

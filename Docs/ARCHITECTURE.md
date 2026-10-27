@@ -50,9 +50,10 @@ hand-keyed in the scripts — stiffness/twitch reads as horror.
 
 ## Performance budgets (the contract with the game)
 
-- Ghost Woman ≤ 5,000 tris (built: 1312), 9 bones. Krasue ≤ 5,000
-  tris (built: 2828), 6 bones.
-- ≤ 5 materials per character. No textures.
+- Ghost Woman ≤ 5,000 tris (built v0.2: 2572), 9 bones. Krasue ≤
+  5,000 tris (built v0.2: 4028), 6 bones.
+- ≤ 6 materials per character, each a small procedural atlas PNG
+  (512–1024) **embedded in the FBX** — nothing to wire up in Unity.
 - Clips sampled at 30 fps; loopable: Idle/Walk (Ghost), Float (Krasue).
 
 ## Repo layout
@@ -64,6 +65,13 @@ hand-keyed in the scripts — stiffness/twitch reads as horror.
 
 ## Decisions
 
+- **2026-10-27 — v0.2 scary pass, textures replace flat colors**:
+  friend's reference (grubby Sadako-style ghost) drove the redesign —
+  face-covering hair with a narrow slit + one pale eye, torn hem,
+  bare feet, fingers; Krasue rebuilt as an exposed severed head with
+  staring eyes + teeth. Atlas textures generated procedurally
+  (numpy fBm noise) and embedded via FBX `embed_textures`; UVs are
+  cylindrical/positional (calc_uvs proved unreliable in Blender 5.x).
 - **2026-10-27 — v2 scope: script-driven, no external rig/anim
   services**: user asked for indie scale without mocap; scripts make
   the models reproducible and reviewable as text.
@@ -74,9 +82,11 @@ hand-keyed in the scripts — stiffness/twitch reads as horror.
 - **2026-10-27 — flat materials over vertex colors/atlas**: Unity's
   standard shaders ignore vertex colors by default; per-material flat
   colors import with zero extra shader work.
-- **2026-10-27 — commit FBX without Git LFS**: at ≤5k tris the FBX
-  files are tens of KB; LFS adds setup friction for the friend.
-  Revisit at >1 MB per asset.
+- **2026-10-27 — commit FBX without Git LFS, revisited at v0.2**:
+  v0.1 assets were tens of KB; v0.2's embedded textures grew them to
+  1.4–1.9 MB. Still acceptable for a 2-asset repo on plain git
+  (history cost grows only on regeneration). Flip to LFS if assets
+  multiply or any single file approaches ~10 MB.
 - **2026-10-27 — FBX for exports** (not Unity's direct `.blend`
   import): stable across Unity versions and needed for clean clip
   export.

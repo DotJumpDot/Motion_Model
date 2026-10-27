@@ -6,17 +6,20 @@ assets is the expensive path we're avoiding.
 
 ## Status
 
-**v0.1 asset package built (2026-10-27).** Both ghosts are generated
-by headless-Blender scripts and committed as FBX with rigs and
-hand-keyed clips. Remaining gate: the friend's Unity import
-(`Docs/IMPORT_CHECKLIST.md`), then tag `v0.1`.
+**v0.2 — scary pass complete (2026-10-27).** Both ghosts rebuilt per
+the friend's reference: procedural grunge textures embedded in the
+FBX (no external files), hair-covered face with a single pale eye,
+torn-hem dress, bare feet, drooping fingers; Krasue as a full severed
+head with staring eyes, teeth and organ trail. Remaining gate: the
+friend's Unity import (`Docs/IMPORT_CHECKLIST.md`).
 
-| Asset | Tris | Bones | Clips |
-|---|---|---|---|
-| Ghost_Woman.fbx | 1312 | 9 | Idle, Walk, Attack |
-| Krasue.fbx | 2828 | 6 | Float, Lunge, Scream |
+| Asset | Tris | Bones | Clips | Textures |
+|---|---|---|---|---|
+| Ghost_Woman.fbx | 2572 | 9 | Idle, Walk, Attack | 3 atlas PNGs (embedded) |
+| Krasue.fbx | 4028 | 6 | Float, Lunge, Scream | 3 atlas PNGs (embedded) |
 
-Previews: `assets/preview/*.png`.
+Previews: `assets/preview/*_front.png` + `*_close.png`.
+History: v0.1 (flat-color, no textures) is tagged `v0.1`.
 
 ## The pipeline in one line
 
