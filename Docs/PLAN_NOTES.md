@@ -30,7 +30,7 @@ as a bug.
 | 4 | Ghost rig + clips | 9-bone rig; Idle/Walk/Attack clips | clips present in FBX, verify script passes | done |
 | 5 | Krasue model + clips | `src/blender/build_krasue.py` → FBX; Float/Lunge/Scream | same gate | done (2828 tris) |
 | 6 | Unity glue | `IMPORT_CHECKLIST.md` + `GhostAI.cs` controller | checklist + script committed | done |
-| 7 | Package + tag | All FBX in `assets/fbx/`, tag `v0.1` | pushed + tagged | done (tag pending friend's Unity pass) |
+| 7 | Package + tag | All FBX in `assets/fbx/`, tag `v0.1` | pushed + tagged | done (tagged v0.1; friend's Unity QA = IMPORT_CHECKLIST) |
 
 Folded/dropped from v1: custom-motion phase (mocap/Cascadeur) is
 folded into 4–5 as hand-keyed clips; Mixamo auto-rig dropped — the
