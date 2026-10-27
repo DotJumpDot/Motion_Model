@@ -5,6 +5,14 @@ One line per meaningful change, newest first. Format:
 list under its date line. Entries mirror the commit log; commits
 themselves follow the style in `AGENTS.md`.
 
+- 2026-10-27 — Build system: `src/blender/blender_lib.py` (lathe/
+  sphere/tube mesh builders, armature + nearest-rule skinning,
+  keyframe clip engine with Blender 5.2 slotted-action compat, FBX
+  export) + `build_ghost.py` / `build_krasue.py` (both characters:
+  meshes, 9- and 6-bone rigs, Idle/Walk/Attack and Float/Lunge/Scream
+  clips) + `verify_fbx.py` round-trip gate + `render_check.py` CPU
+  preview renderer; `src/unity/GhostAI.cs` wander/chase/attack
+  controller (no NavMesh dependency).
 - 2026-10-27 — Plan v2 (indie scope): mocap/Cascadeur/Mixamo dropped
   from core pipeline; everything rebuilt as headless Blender scripts
   (`Docs/PLAN_NOTES.md` phases table + status, `Docs/ARCHITECTURE.md`
