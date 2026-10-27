@@ -5,6 +5,18 @@ One line per meaningful change, newest first. Format:
 list under its date line. Entries mirror the commit log; commits
 themselves follow the style in `AGENTS.md`.
 
+- 2026-10-28 — **v0.4: Ghost Woman rebuilt via local AI** (user
+  approved Option A): Hunyuan3D-2mini-turbo shape gen from the
+  friend's reference image (24 s on RTX 5060; transformers pinned to
+  4.48.3 — 5.x breaks the DINOv2 conditioner), Blender decimate to
+  7999 tris, NEW 15-bone rig with real legs + walk gait + smooth
+  2-bone auto-skinning (fixes skirt-hem tearing), projection bake of
+  the reference onto the mesh (Hunyuan texgen blocked: CUDA 12.8
+  side-by-side install needs admin; pip nvcc wheel lacks nvcc.exe on
+  Windows) with procedural-fabric back blend, FBX re-exported with
+  embedded 1024 texture. Pipeline scripts versioned in
+  `src/hunyuan3d/`; toolchain gitignored under `tools/`. Krasue
+  unchanged. License flag recorded (Tencent Hunyuan Community).
 - 2026-10-27 — v0.3 ghost cohesion pass (friend feedback: parts
   looked disconnected): hair bob-cut ends at shoulders (no chest
   slab) + side panels rotated to overlap the slit edges, dress top
