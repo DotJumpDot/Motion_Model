@@ -3,12 +3,16 @@
     blender --background --python tools/hunyuan3d/rig_ghost.py
 
 Pipeline: import ghost_ai.glb (Hunyuan3D output) -> decimate to the
-tri budget -> normalize to origin-at-feet -> build a 15-bone humanoid
-rig (hips/spine/head + 2x3 arm + 2x3 leg) -> auto-skin by nearest
-bone segment with explicit skirt/leg zones -> hand-key Idle/Walk/
-Attack -> export FBX (embedded texture if the GLB carries one).
+tri budget -> normalize to origin-at-feet -> classify every vertex as
+hair / skin / robe (depth vs the reference photo) -> build a 26-bone
+rig (hips/spine/head + 2x3 arm + 2x3 leg + 7 hair-whip chain bones +
+4 robe-hem bones) -> auto-skin by nearest bone segment with class
+gates -> hand-key Idle/Walk/Attack incl. hair/hem secondary sway ->
+bake the texture (photo projection + vertex-mask hair/skin/robe mix)
+-> export FBX (embedded texture).
 
-Render checks: rest + mid-walk pose, textured, front + close.
+Render checks: rest, mid-walk and mid-attack poses, textured,
+front + close + back.
 """
 
 import math
@@ -16,6 +20,7 @@ import os
 import sys
 
 import bpy
+import numpy as np
 from mathutils import Vector
 
 REPO = "C:/Code/Motion_Model"
@@ -24,6 +29,8 @@ import blender_lib as bl  # noqa: E402
 
 GLB = os.path.join(REPO, "tools", "hunyuan3d", "out", "ghost_ai.glb")
 OUT_DIR = os.path.join(REPO, "tools", "hunyuan3d", "out")
+REF_IMG = os.path.join(OUT_DIR, "input_clean.png")
+BAKE_PNG = os.path.join(REPO, "assets", "textures", "gw_ai_bake.png")
 OUT_FBX = os.path.join(REPO, "assets", "fbx", "Ghost_Woman.fbx")
 TRI_BUDGET = 8000
 
@@ -53,6 +60,83 @@ src.matrix_world = __import__("mathutils").Matrix.Identity(4)
 HEIGHT = max(v.co.z for v in src.data.vertices)
 print(f"RIG: normalized, height={HEIGHT:.3f}")
 
+# ---- 1b. classify verts: hair / skin / robe ----------------------------
+# Depth-based split against the reference photo (same projection the
+# bake uses): the hair curtains are the FRONTMOST surface in each
+# (x,z) cell of the head/torso band, the face/neck are recessed behind
+# them. Photo luminance breaks ties (jet-black strands vs brighter
+# dress) and adds the pale bare hands + feet. The masks drive both the
+# texture bake and which bones may grab a vertex during skinning.
+
+ref = bpy.data.images.load(REF_IMG)
+w, h = ref.size
+px = np.array(ref.pixels[:], dtype=np.float32).reshape(h, w, 4)
+alpha = px[:, :, 3] > 0.1
+cols = np.where(alpha.any(axis=0))[0]
+rows = np.where(alpha.any(axis=1))[0]
+gx0, gx1 = cols[0] / w, (cols[-1] + 1) / w
+gy0, gy1 = rows[0] / h, (rows[-1] + 1) / h
+xs = [v.co.x for v in src.data.vertices]
+ww = max(xs) - min(xs)
+gcx = (gx0 + gx1) / 2
+SU = -(gx1 - gx0) / ww          # mirrored: viewer's left is +X
+CV = gy0
+SV = (gy1 - gy0) / HEIGHT
+
+
+def photo_lum(x, z):
+    c = int((x * SU + gcx) * w)
+    r = int((z * SV + CV) * h)
+    if 0 <= c < w and 0 <= r < h and px[r, c, 3] >= 0.1:
+        return float(px[r, c, :3].mean())
+    return 0.0
+
+
+Z_FACE0, Z_FACE1 = 0.785 * HEIGHT, 0.945 * HEIGHT
+Z_CROWN = 0.945 * HEIGHT
+Z_HEAD = 0.82 * HEIGHT
+Z_BAND0 = 0.55 * HEIGHT
+cells = {}
+band_ids = set()
+for i, v in enumerate(src.data.vertices):
+    x, z = v.co.x, v.co.z
+    if (Z_BAND0 < z < Z_FACE1 and abs(x) < 0.095 * HEIGHT
+            and v.normal.y < 0.3):
+        key = (round(x / 0.012), round(z / 0.012))
+        cells[key] = min(cells.get(key, 1e9), v.co.y)
+        band_ids.add(i)
+
+HAIR_IDS = set()
+SKIN_IDS = set()
+vmask = src.data.color_attributes.new("mask", "FLOAT_COLOR", "POINT")
+for i, v in enumerate(src.data.vertices):
+    x, y, z = v.co.x, v.co.y, v.co.z
+    ny = v.normal.y
+    lum = photo_lum(x, z)
+    key = (round(x / 0.012), round(z / 0.012))
+    in_band = i in band_ids
+    frontmost = in_band and y <= cells[key] + 0.012
+    recessed = in_band and y > cells[key] + 0.012
+    face_zone = (ny < -0.2 and abs(x) < 0.05 * HEIGHT
+                 and Z_FACE0 < z < Z_FACE1)
+    skin = (face_zone and (abs(x) < 0.025 * HEIGHT or recessed)) or \
+        (ny < 0.5 and lum > 0.42 and abs(x) > 0.105 * HEIGHT
+         and 0.40 * HEIGHT < z < 0.62 * HEIGHT) or \
+        (lum > 0.42 and z < 0.11 * HEIGHT)
+    hair = (not skin) and (
+        z > Z_CROWN
+        or (frontmost and lum < 0.30)
+        or z > Z_HEAD
+        or (ny > 0.35 and z > 0.55 * HEIGHT and abs(x) < 0.115 * HEIGHT))
+    if hair:
+        HAIR_IDS.add(i)
+    if skin:
+        SKIN_IDS.add(i)
+    vmask.data[i].color = (1.0 if hair else 0.0,
+                           1.0 if skin else 0.0, 0.0, 1.0)
+print(f"RIG: classified hair={len(HAIR_IDS)} skin={len(SKIN_IDS)} "
+      f"robe={len(src.data.vertices) - len(HAIR_IDS) - len(SKIN_IDS)}")
+
 # ---- 2. armature (15 bones, proportions from the mesh bbox) -----------
 
 H = HEIGHT
@@ -65,6 +149,8 @@ LEG_X = 0.048 * H
 SHOULDER_X = 0.105 * H
 ELBOW_X = 0.122 * H
 WRIST_X = 0.127 * H
+RH = max((v.co.x ** 2 + v.co.y ** 2) ** 0.5
+         for v in src.data.vertices if v.co.z < 0.12 * H)
 
 bones = [
     ("Hips", None, (0, 0, 0.92 * H * 0.5 + HIP_Z * 0.5),
@@ -91,6 +177,32 @@ for side, x in (("L", 1), ("R", -1)):
         (f"Foot_{side}", f"Shin_{side}",
          (LEG_X * x, -0.005, ANKLE_Z), (LEG_X * x, 0.09, 0.015), True),
     ]
+# secondary-motion chains: hair whip (parented to Head) and robe hem
+# flutter (parented to Hips); sway is keyed into every clip below
+bones += [
+    ("HairB_1", "Head", (0, 0.045 * H, 0.86 * H),
+     (0, 0.055 * H, 0.72 * H), True),
+    ("HairB_2", "HairB_1", (0, 0.055 * H, 0.72 * H),
+     (0, 0.06 * H, 0.58 * H), True),
+    ("HairB_3", "HairB_2", (0, 0.06 * H, 0.58 * H),
+     (0, 0.06 * H, 0.46 * H), True),
+    ("HairL_1", "Head", (0.055 * H, -0.015 * H, 0.85 * H),
+     (0.065 * H, -0.02 * H, 0.70 * H), True),
+    ("HairL_2", "HairL_1", (0.065 * H, -0.02 * H, 0.70 * H),
+     (0.065 * H, -0.01 * H, 0.56 * H), True),
+    ("HairR_1", "Head", (-0.055 * H, -0.015 * H, 0.85 * H),
+     (-0.065 * H, -0.02 * H, 0.70 * H), True),
+    ("HairR_2", "HairR_1", (-0.065 * H, -0.02 * H, 0.70 * H),
+     (-0.065 * H, -0.01 * H, 0.56 * H), True),
+    ("Robe_F", "Hips", (0, -0.8 * RH, 0.14 * H),
+     (0, -0.88 * RH, 0.03 * H), True),
+    ("Robe_B", "Hips", (0, 0.8 * RH, 0.14 * H),
+     (0, 0.88 * RH, 0.03 * H), True),
+    ("Robe_L", "Hips", (0.8 * RH, 0, 0.14 * H),
+     (0.88 * RH, 0, 0.03 * H), True),
+    ("Robe_R", "Hips", (-0.8 * RH, 0, 0.14 * H),
+     (-0.88 * RH, 0, 0.03 * H), True),
+]
 arm = bl.build_armature("GhostWoman_Armature", bones)
 
 # ---- 3. skinning: zone rules + nearest segment ------------------------
@@ -113,16 +225,35 @@ ARM_BONES = [f"UpperArm_{s}" for s in ("L", "R")] + \
 LEG_BONES = [f"Thigh_{s}" for s in ("L", "R")] + \
             [f"Shin_{s}" for s in ("L", "R")] + \
             [f"Foot_{s}" for s in ("L", "R")]
+HAIR_BONES = [f"HairB_{i}" for i in (1, 2, 3)] + \
+             [f"Hair{side}_{i}" for side in ("L", "R") for i in (1, 2)]
+ROBE_BONES = ["Robe_F", "Robe_B", "Robe_L", "Robe_R"]
 ALL_BONES = ["Hips", "Spine", "Head"] + ARM_BONES + LEG_BONES
 SEG = {b[0]: (b[2], b[3]) for b in bones}
 
 bl.parent_to(src, arm)
 # smooth skinning: top-2 nearest bone segments, inverse-square weights
-# (hard 1.0 weights tore the skirt hem when the legs swung)
+# (hard 1.0 weights tore the skirt hem when the legs swung). Hair
+# verts blend only between the hair chains and the spine chain, so
+# hair bones never steal the face; robe hem bones join the candidate
+# set below z 0.35H.
 pairs = {}
 for v in src.data.vertices:
     p = v.co
-    dists = sorted((dist_to_seg(p, *SEG[n]), n) for n in ALL_BONES)
+    if v.index in HAIR_IDS:
+        cands = ["Head", "Spine", "Hips"] + HAIR_BONES
+    else:
+        cands = list(ALL_BONES)
+        if p.z < 0.22 * H:
+            cands += ROBE_BONES
+        # arm bones must not steal robe verts below the sleeve line —
+        # the skirt's outer edge sits right beside the hanging hands,
+        # and at the attack lunge those verts would dangle off the arm
+        if p.z < 0.58 * H and v.index not in SKIN_IDS:
+            cands = [n for n in cands
+                     if not n.startswith(("UpperArm", "Forearm",
+                                          "Hand"))]
+    dists = sorted((dist_to_seg(p, *SEG[n]), n) for n in cands)
     (d1, n1), (d2, n2) = dists[0], dists[1]
     if d2 > 4.0 * max(d1, 1e-4):
         pairs.setdefault(n1, []).append((v.index, 1.0))
@@ -168,6 +299,23 @@ def idle(f):
         d[f"UpperArm_{side}"]["rot"] = (2.5 * math.sin(t + ph), 0,
                                         1.5 * math.sin(t + ph))
         d[f"Forearm_{side}"]["rot"] = (3.5 * math.sin(t + ph + 0.6), 0, 0)
+    # secondary motion: hair whip + hem flutter lag the body wave,
+    # amplitude grows and phase delays toward the chain tips
+    d["HairB_1"]["rot"] = (2.5 * math.sin(t + 0.3), 0,
+                           1.2 * math.sin(t))
+    d["HairB_2"]["rot"] = (4.0 * math.sin(t + 0.8), 0,
+                           1.8 * math.sin(t + 0.3))
+    d["HairB_3"]["rot"] = (5.5 * math.sin(t + 1.3), 0,
+                           2.2 * math.sin(t + 0.6))
+    for side, sx in (("L", 1), ("R", -1)):
+        d[f"Hair{side}_1"]["rot"] = (2.5 * math.sin(t + 0.4), 0,
+                                     sx * 1.5 * math.sin(t + 0.6))
+        d[f"Hair{side}_2"]["rot"] = (4.0 * math.sin(t + 0.9), 0,
+                                     sx * 2.2 * math.sin(t + 1.1))
+    for name, ph in (("Robe_F", 0.0), ("Robe_R", 1.6), ("Robe_B", 3.1),
+                     ("Robe_L", 4.7)):
+        d[name]["rot"] = (1.8 * math.sin(t + ph), 0,
+                          1.2 * math.sin(t + ph + 0.5))
     return d
 
 
@@ -187,6 +335,25 @@ def walk(f):
         d[f"Foot_{side}"]["rot"] = (12 * math.sin(t + ph + 0.9), 0, 0)
         d[f"UpperArm_{side}"]["rot"] = (-14 * swing, 0, 2 * math.sin(t + ph))
         d[f"Forearm_{side}"]["rot"] = (-10 * max(0.0, swing) - 4, 0, 0)
+    # hair trails the stride with per-chain lag; the hem see-saws
+    # fore/aft around it (front hem forward while the back hem kicks)
+    d["HairB_1"]["rot"] = (-4 * math.sin(t + 0.5), 0,
+                           2 * math.sin(2 * t + 0.3))
+    d["HairB_2"]["rot"] = (-6 * math.sin(t + 0.9), 0,
+                           2.6 * math.sin(2 * t + 0.6))
+    d["HairB_3"]["rot"] = (-7 * math.sin(t + 1.3), 0,
+                           3.2 * math.sin(2 * t + 0.9))
+    for side, sx in (("L", 1), ("R", -1)):
+        d[f"Hair{side}_1"]["rot"] = (-3.5 * math.sin(t + 0.6), 0,
+                                     sx * 1.8 * math.sin(t + 0.9))
+        d[f"Hair{side}_2"]["rot"] = (-4.5 * math.sin(t + 1.0), 0,
+                                     sx * 2.2 * math.sin(t + 1.3))
+    d["Robe_F"]["rot"] = (6 * math.sin(t + 0.9), 0, 2 * math.sin(2 * t))
+    d["Robe_B"]["rot"] = (-6 * math.sin(t + 0.9), 0,
+                          2 * math.sin(2 * t + math.pi))
+    d["Robe_L"]["rot"] = (2 * math.sin(2 * t), 0, 5 * math.sin(t + 0.9))
+    d["Robe_R"]["rot"] = (2 * math.sin(2 * t + math.pi), 0,
+                          -5 * math.sin(t + 0.9))
     return d
 
 
@@ -208,22 +375,38 @@ def attack_keys():
             UpperArm_L={"rot": (165, 0, -12)},
             UpperArm_R={"rot": (165, 0, 12)},
             Forearm_L={"rot": (25, 0, 0)}, Forearm_R={"rot": (25, 0, 0)},
-            Thigh_L={"rot": (-8, 0, 0)}, Thigh_R={"rot": (8, 0, 0)})),
+            Thigh_L={"rot": (-8, 0, 0)}, Thigh_R={"rot": (8, 0, 0)},
+            HairB_1={"rot": (-5, 0, 0)}, HairB_2={"rot": (-8, 0, 0)},
+            HairB_3={"rot": (-10, 0, 0)},
+            HairL_1={"rot": (-4, 0, 3)}, HairL_2={"rot": (-6, 0, 4)},
+            HairR_1={"rot": (-4, 0, -3)}, HairR_2={"rot": (-6, 0, -4)},
+            Robe_F={"rot": (2, 0, 0)}, Robe_B={"rot": (-2, 0, 0)})),
         (14, pose(
-            Hips={"loc": (0, -0.17, 0.005), "rot": (0, 0, 0)},
+            Hips={"loc": (0, -0.15, 0.005), "rot": (0, 0, 0)},
             Spine={"rot": (22, 0, 0)}, Head={"rot": (16, 0, 0)},
             UpperArm_L={"rot": (-35, 0, -18)},
             UpperArm_R={"rot": (-35, 0, 18)},
             Forearm_L={"rot": (-20, 0, 0)}, Forearm_R={"rot": (-20, 0, 0)},
             Thigh_L={"rot": (14, 0, 0)}, Thigh_R={"rot": (-12, 0, 0)},
-            Shin_R={"rot": (-20, 0, 0)})),
+            Shin_R={"rot": (-20, 0, 0)},
+            HairB_1={"rot": (12, 0, 0)}, HairB_2={"rot": (16, 0, 0)},
+            HairB_3={"rot": (18, 0, 0)},
+            HairL_1={"rot": (9, 0, -4)}, HairL_2={"rot": (12, 0, -6)},
+            HairR_1={"rot": (9, 0, 4)}, HairR_2={"rot": (12, 0, 6)},
+            Robe_F={"rot": (5, 0, 0)}, Robe_B={"rot": (5, 0, 0)},
+            Robe_L={"rot": (0, 0, -5)}, Robe_R={"rot": (0, 0, 5)})),
         (22, pose(
             Hips={"loc": (0, -0.18, 0), "rot": (0, 0, 0)},
             Spine={"rot": (19, 0, 2)}, Head={"rot": (13, 0, 4)},
             UpperArm_L={"rot": (-28, 0, -18)},
             UpperArm_R={"rot": (-28, 0, 18)},
             Forearm_L={"rot": (-14, 0, 0)}, Forearm_R={"rot": (-14, 0, 0)},
-            Thigh_L={"rot": (12, 0, 0)}, Thigh_R={"rot": (-10, 0, 0)})),
+            Thigh_L={"rot": (12, 0, 0)}, Thigh_R={"rot": (-10, 0, 0)},
+            HairB_1={"rot": (8, 0, 0)}, HairB_2={"rot": (10, 0, 0)},
+            HairB_3={"rot": (12, 0, 0)},
+            HairL_1={"rot": (6, 0, -2)}, HairL_2={"rot": (8, 0, -3)},
+            HairR_1={"rot": (6, 0, 2)}, HairR_2={"rot": (8, 0, 3)},
+            Robe_F={"rot": (3, 0, 0)}, Robe_B={"rot": (3, 0, 0)})),
         (36, zero),
     ]
 
@@ -232,14 +415,14 @@ bl.add_clip(arm, "Idle", 96, idle)
 bl.add_clip(arm, "Walk", 48, walk)
 bl.add_clip(arm, "Attack", 36, bl.pose_from_keys(attack_keys()))
 
-# ---- 5. projection texture bake ---------------------------------------
+# ---- 5. texture bake: photo projection + vertex-mask regions -----------
 # The mesh was GENERATED from the reference image, so a front-view
-# projection aligns almost perfectly. Back/sides blend to procedural
-# dark fabric. One EMIT bake in Cycles onto a smart-UV atlas.
+# projection aligns almost perfectly. Vertex classes from 1b drive the
+# final mix: hair = black streak atlas sampled with the projection UV
+# (v = world z, so streaks hang vertically), skin = pale corpse base
+# lightly tinted by the photo, robe = photo on the front / procedural
+# fabric on the back. One EMIT bake in Cycles onto a smart-UV atlas.
 
-REF_IMG = os.path.join(REPO, "tools", "hunyuan3d", "out",
-                       "input_clean.png")
-BAKE_PNG = os.path.join(REPO, "assets", "textures", "gw_ai_bake.png")
 if os.path.exists(REF_IMG):
     os.makedirs(os.path.dirname(BAKE_PNG), exist_ok=True)
 
@@ -254,28 +437,12 @@ if os.path.exists(REF_IMG):
         "gw_ai_fabric", 512, base=(0.44, 0.42, 0.39),
         blotch=(0.22, 0.19, 0.15), blotch_amount=0.65, blotch_seed=21,
         streak=((0.24, 0.22, 0.19), 24, 0.2), dirt_bottom=0.8, seed=20)
-    ref = bpy.data.images.load(REF_IMG)
-
-    # projection from object coords: horizontal = world X (model faces
-    # -Y), vertical = world Z. Align the model's world bbox to the
-    # ghost's pixel bbox in the reference (alpha channel).
-    import numpy as np
-    w, h = ref.size
-    px = np.array(ref.pixels[:], dtype=np.float32).reshape(h, w, 4)
-    alpha = px[:, :, 3] > 0.1
-    cols = np.where(alpha.any(axis=0))[0]
-    rows = np.where(alpha.any(axis=1))[0]
-    gx0, gx1 = cols[0] / w, (cols[-1] + 1) / w
-    gy0, gy1 = rows[0] / h, (rows[-1] + 1) / h
-    xs = [v.co.x for v in src.data.vertices]
-    ww = max(xs) - min(xs)
-    WH = max(v.co.z for v in src.data.vertices)
-    gcx = (gx0 + gx1) / 2
-    SU = -(gx1 - gx0) / ww          # mirrored: viewer's left is +X
-    CV = gy0
-    SV = (gy1 - gy0) / WH
-    print(f"BAKE align: ghost uv box=({gx0:.2f},{gx1:.2f},{gy0:.2f},"
-          f"{gy1:.2f}) su={SU:.3f} sv={SV:.3f} cv={CV:.3f}")
+    hair_img = bl.make_texture(
+        "gw_hair", 512, base=(0.050, 0.046, 0.056),
+        blotch=(0.016, 0.014, 0.020), blotch_amount=0.45, blotch_seed=31,
+        streak=((0.016, 0.014, 0.020), 44, 0.55), seed=30)
+    print(f"BAKE align: su={SU:.3f} sv={SV:.3f} cv={CV:.3f} "
+          f"gcx={gcx:.3f} (computed in the classify pass)")
 
     mat = bpy.data.materials.new("gw_bake_src")
     mat.use_nodes = True
@@ -285,7 +452,9 @@ if os.path.exists(REF_IMG):
             nt.nodes.remove(n)
     out_node = next(n for n in nt.nodes if n.type == "OUTPUT_MATERIAL")
 
-    # projection from object coords: u = x*SU + gcx, v = z*SV + CV
+    # projection: u = x*SU + gcx, v = z*SV + CV (model faces -Y, so the
+    # horizontal axis is mirrored to match the photo). The same mapping
+    # feeds the hair streak atlas — v = world z keeps strands vertical.
     tc = nt.nodes.new("ShaderNodeTexCoord")
     sep = nt.nodes.new("ShaderNodeSeparateXYZ")
     comb = nt.nodes.new("ShaderNodeCombineXYZ")
@@ -295,15 +464,30 @@ if os.path.exists(REF_IMG):
     img_ref.extension = "EXTEND"
     tex_fab = nt.nodes.new("ShaderNodeTexImage")
     tex_fab.image = fabric
+    tex_hair = nt.nodes.new("ShaderNodeTexImage")
+    tex_hair.image = hair_img
     geo = nt.nodes.new("ShaderNodeNewGeometry")
     dot = nt.nodes.new("ShaderNodeVectorMath")
     dot.operation = "DOT_PRODUCT"
     dot.inputs[1].default_value = (0.0, -1.0, 0.0)
-    mask = nt.nodes.new("ShaderNodeMapRange")
-    mask.inputs["From Min"].default_value = -0.25
-    mask.inputs["From Max"].default_value = 0.35
-    mixc = nt.nodes.new("ShaderNodeMix")
-    mixc.data_type = "RGBA"
+    front = nt.nodes.new("ShaderNodeMapRange")
+    front.inputs["From Min"].default_value = -0.25
+    front.inputs["From Max"].default_value = 0.35
+    attr = nt.nodes.new("ShaderNodeAttribute")
+    attr.attribute_name = "mask"
+    sep_m = nt.nodes.new("ShaderNodeSeparateColor")
+    pale = nt.nodes.new("ShaderNodeRGB")
+    pale.outputs[0].default_value = (0.62, 0.59, 0.53, 1.0)
+    bright = nt.nodes.new("ShaderNodeBrightContrast")
+    bright.inputs["Bright"].default_value = 0.18
+    bright.inputs["Contrast"].default_value = 0.08
+
+    def mix():
+        m = nt.nodes.new("ShaderNodeMix")
+        m.data_type = "RGBA"
+        return m
+
+    m_robe, m_hair, m_skin, m_out = mix(), mix(), mix(), mix()
     emit = nt.nodes.new("ShaderNodeEmission")
 
     def sock(node, ident, inputs=True):
@@ -313,8 +497,6 @@ if os.path.exists(REF_IMG):
                 return s
         raise KeyError(ident)
 
-    # horizontal = world X (model faces -Y), vertical = world Z,
-    # aligned to the ghost's pixel bbox computed above
     nt.links.new(tc.outputs["Object"], sep.inputs[0])
     nt.links.new(sep.outputs["X"], comb.inputs["X"])
     nt.links.new(sep.outputs["Z"], comb.inputs["Y"])
@@ -322,19 +504,35 @@ if os.path.exists(REF_IMG):
     mp.inputs["Location"].default_value = (gcx, CV, 0.0)
     nt.links.new(comb.outputs[0], mp.inputs["Vector"])
     nt.links.new(mp.outputs[0], img_ref.inputs["Vector"])
-    bright = nt.nodes.new("ShaderNodeBrightContrast")
-    bright.inputs["Bright"].default_value = 0.18
-    bright.inputs["Contrast"].default_value = 0.08
-    nt.links.new(img_ref.outputs["Color"], bright.inputs["Color"])
-    nt.links.new(bright.outputs["Color"], sock(mixc, "B_Color"))
+    nt.links.new(mp.outputs[0], tex_hair.inputs["Vector"])
     nt.links.new(tc.outputs["UV"], tex_fab.inputs["Vector"])
     nt.links.new(geo.outputs["Normal"], dot.inputs[0])
-    nt.links.new(dot.outputs["Value"], mask.inputs["Value"])
+    nt.links.new(dot.outputs["Value"], front.inputs["Value"])
+    nt.links.new(attr.outputs["Color"], sep_m.inputs[0])
+    nt.links.new(img_ref.outputs["Color"], bright.inputs["Color"])
 
-    nt.links.new(tex_fab.outputs["Color"], sock(mixc, "A_Color"))
-    nt.links.new(bright.outputs["Color"], sock(mixc, "B_Color"))
-    nt.links.new(mask.outputs["Result"], sock(mixc, "Factor_Float"))
-    nt.links.new(sock(mixc, "Result_Color", inputs=False),
+    # robe: photo on the front, procedural fabric on the back
+    nt.links.new(tex_fab.outputs["Color"], sock(m_robe, "A_Color"))
+    nt.links.new(bright.outputs["Color"], sock(m_robe, "B_Color"))
+    nt.links.new(front.outputs["Result"], sock(m_robe, "Factor_Float"))
+    # hair: black streak atlas overrides robe on BOTH sides (fixes the
+    # gray back of the head/drape) via the vertex hair mask
+    nt.links.new(sock(m_robe, "Result_Color", inputs=False),
+                 sock(m_hair, "A_Color"))
+    nt.links.new(tex_hair.outputs["Color"], sock(m_hair, "B_Color"))
+    nt.links.new(sep_m.outputs["Red"], sock(m_hair, "Factor_Float"))
+    # skin: pale corpse base lightly tinted by the photo (never black —
+    # the sockets/mouth shading comes from the geometry)
+    nt.links.new(pale.outputs[0], sock(m_skin, "A_Color"))
+    nt.links.new(img_ref.outputs["Color"], sock(m_skin, "B_Color"))
+    sock(m_skin, "Factor_Float").default_value = 0.22
+    # final: hair first, then skin wins on the face/hands/feet
+    nt.links.new(sock(m_hair, "Result_Color", inputs=False),
+                 sock(m_out, "A_Color"))
+    nt.links.new(sock(m_skin, "Result_Color", inputs=False),
+                 sock(m_out, "B_Color"))
+    nt.links.new(sep_m.outputs["Green"], sock(m_out, "Factor_Float"))
+    nt.links.new(sock(m_out, "Result_Color", inputs=False),
                  emit.inputs["Color"])
     nt.links.new(emit.outputs[0], out_node.inputs["Surface"])
 
@@ -395,7 +593,9 @@ scene.collection.objects.link(cam)
 scene.camera = cam
 
 CENTER = Vector((0, 0, 0.5 * H))
-for label, pose_at, frame in (("rest", None, 1), ("walk", walk, 12)):
+attack_fn = bl.pose_from_keys(attack_keys())
+for label, pose_at, frame in (("rest", None, 1), ("walk", walk, 12),
+                              ("attack", attack_fn, 14)):
     if pose_at:
         for bname, entry in pose_at(frame).items():
             pb = arm.pose.bones.get(bname)

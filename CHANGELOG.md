@@ -5,6 +5,21 @@ One line per meaningful change, newest first. Format:
 list under its date line. Entries mirror the commit log; commits
 themselves follow the style in `AGENTS.md`.
 
+- 2026-10-28 — **v0.5: Ghost Woman secondary motion + real texture**
+  (user: "look cool, add hair/cloth sway + texture"): 11 new bones
+  (HairB_1..3 back-drape whip, HairL/R_1..2 front curtains, Robe_F/B/L/R
+  hem flutter — 26 total) keyed with lagged sway into Idle/Walk and
+  trailing-whip keys into Attack; per-vertex hair/skin/robe classifier
+  (depth-vs-photo + frontmost-cell rules, `classify_probe.py`) drives
+  both skinning gates and the texture bake; bake v2 mixes black
+  streak-atlas hair (projection UV keeps strands vertical), pale
+  corpse skin on face/hands/feet, photo-front/fabric-back robe —
+  fixes the gray "clay" look; skinning gates stop arm bones stealing
+  skirt verts (cloth no longer dangles off the hands at the lunge);
+  optional `src/unity/JiggleBone.cs` spring-damper for Unity-side
+  physics flutter; IMPORT_CHECKLIST updated (26 bones, jiggle setup).
+  CUDA 12.8.1 + VS Build Tools install started for the Hunyuan texgen
+  upgrade (user runs the admin prompts) — targeted as v0.6.
 - 2026-10-28 — **v0.4: Ghost Woman rebuilt via local AI** (user
   approved Option A): Hunyuan3D-2mini-turbo shape gen from the
   friend's reference image (24 s on RTX 5060; transformers pinned to

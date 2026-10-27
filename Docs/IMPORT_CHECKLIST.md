@@ -43,18 +43,28 @@ Scream (wire the clips from that FBX).
 3. Press Play: ghost idles/wanders, chases inside 10 m, attacks
    inside 1.6 m with cooldown.
 
-## Known-good numbers (v0.4 AI ghost, 2026-10-28)
+## Known-good numbers (v0.5 AI ghost, 2026-10-28)
 
-- Ghost_Woman.fbx: **7999 tris, 15 bones** (with legs — Generic rig
+- Ghost_Woman.fbx: **7999 tris, 26 bones** (with legs — Generic rig
   required, do NOT use Humanoid: bone names are custom), 1 material
   with a 1024 texture **embedded in the FBX**, bbox ~0.64 × 0.42 ×
   1.96 m, character faces **-Y in Blender = +Z in Unity** with
   default export settings. Clips: Idle(96f)/Walk(48f)/Attack(36f);
   tick Loop Time on Idle+Walk.
+- v0.5 texture: black hair drape with strand streaks over head/chest,
+  pale corpse face between the curtains, pale bare hands + feet,
+  grubby gray robe (photo-projected front, procedural fabric back).
+- v0.5 secondary-motion bones (all sway is already baked into the
+  clips): `HairB_1..3` (back drape), `HairL_1..2` / `HairR_1..2`
+  (front curtains), `Robe_F/B/L/R` (hem flutter).
+- **Optional physics flutter**: add `src/unity/JiggleBone.cs` to those
+  11 bones (multi-select them in the rig hierarchy → Add Component).
+  Defaults are tuned for ghost cloth; raise `damping` if it gets too
+  floppy. Skip it for the cheapest build — the baked sway alone works.
 - Krasue.fbx: 4028 tris, 6 bones, 6 materials (3 atlases, embedded),
   bbox 0.35 × 0.36 × 0.94 m (head occupies z 0.9–1.85). Clips:
   Float(96f)/Lunge(30f)/Scream(36f); Loop on Float.
 - Ghost walk has real leg motion now (thigh/shin/foot bones); the
-  AI mesh's dress hem is soft-skinned so it sways with the stride.
+  robe hem is soft-skinned and flutters via the Robe_* bones.
 - If any material shows pink: Standard/URP Lit + reassign the
   embedded texture.
